@@ -383,6 +383,53 @@ h2 {
         width: 95%;
         margin: 10% auto;
     }
+
+    .grid-container {
+        overflow-x: hidden;
+    }
+
+    #customer-grid {
+        display: block;
+        width: 100%;
+    }
+    #customer-grid thead {
+        display: none;
+    }
+    #customer-grid tbody, #customer-grid tr, #customer-grid td {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    #customer-grid tr {
+        margin-bottom: 1.5rem;
+        border: 1px solid #3e5060;
+        border-radius: 15px;
+        padding: 1.5rem;
+        background-color: #2c3a47;
+    }
+    #customer-grid td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #3e5060;
+    }
+    #customer-grid td:last-child {
+        border-bottom: none;
+    }
+    #customer-grid td::before {
+        content: attr(data-label);
+        font-weight: bold;
+        color: var(--primary-color);
+        flex-basis: 50%;
+        text-align: left;
+        padding-right: 1rem;
+    }
+    .amount-paid-input, .payment-mode-select {
+        width: auto;
+        flex-grow: 1;
+        max-width: 120px;
+    }
 }
 
 .amount-paid-input, .payment-mode-select {

@@ -53,26 +53,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${customer.id}</td>
-                <td>${customer.name}</td>
-                <td>${customer.phone}</td>
-                <td>${customer.address}</td>
-                <td>${customer.day}</td>
+                <td data-label="ID">${customer.id}</td>
+                <td data-label="Name">${customer.name}</td>
+                <td data-label="Phone Number">${customer.phone}</td>
+                <td data-label="Address">${customer.address}</td>
+                <td data-label="Day">${customer.day}</td>
 
-                <td>${customer.totalPayableAmount}</td>
-                <td>${customer.balanceAmount}</td>
-                <td><input type="number" class="amount-paid-input" value="${paymentStatus === 'Paid' ? lastPaidAmount : 0}" ${paymentStatus === 'Paid' ? 'disabled' : ''} min="1" max="99999"></td>
+                <td data-label="Total Payable Amount">${customer.totalPayableAmount}</td>
+                <td data-label="Balance Amount">${customer.balanceAmount}</td>
+                <td data-label="Amount Paid (Current)"><input type="number" class="amount-paid-input" value="${paymentStatus === 'Paid' ? lastPaidAmount : 0}" ${paymentStatus === 'Paid' ? 'disabled' : ''} min="1" max="99999"></td>
  
-                <td>
+                <td data-label="Payment Mode">
                     <select class="payment-mode-select" ${paymentStatus === 'Paid' ? 'disabled' : ''}>
                         <option value="Cash" ${paymentMode === 'Cash' ? 'selected' : ''}>Cash</option>
                         <option value="UPI" ${paymentMode === 'UPI' ? 'selected' : ''}>UPI</option>
                     </select>
                 </td>
-                <td>
+                <td data-label="Actions">
                     ${paymentStatus === 'Paid' ? '<button class="edit-pay-btn">Edit</button>' : '<button class="pay-btn">Pay</button>'}
                 </td>
-                <td>
+                <td data-label="Payment Status">
                     ${paymentStatus === 'Paid' ? '<span class="paid-status">Paid</span>' : '<span class="not-paid-status">Not Paid</span>'}
                 </td>
             `;
