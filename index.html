@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Collection App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Weekly Collection Dashboard</h1>
+            <div>
+                <button id="add-customer-btn">Add Customer</button>
+                <button id="generate-report-btn"><i class="fas fa-download"></i> Generate Report</button>
+            </div>
+        </header>
+        <main>
+            <div class="week-navigation">
+                <button id="prev-week-btn">&lt; Prev Week</button>
+                <h3 id="week-range"></h3>
+                <button id="next-week-btn">Next Week &gt;</button>
+            </div>
+            <div class="filter-section">
+                <div class="day-filters">
+                    <button class="day-filter active" data-day="All">All</button>
+                    <button class="day-filter" data-day="Sunday">SUN</button>
+                    <button class="day-filter" data-day="Monday">MON</button>
+                    <button class="day-filter" data-day="Tuesday">TUE</button>
+                    <button class="day-filter" data-day="Wednesday">WED</button>
+                    <button class="day-filter" data-day="Thursday">THU</button>
+                    <button class="day-filter" data-day="Friday">FRI</button>
+                    <button class="day-filter" data-day="Saturday">SAT</button>
+                </div>
+                <span id="selected-date-display"></span>
+                <div class="search-filter">
+                    <input type="text" id="search-input" placeholder="Search by name, phone, or address">
+                </div>
+            </div>
+            <div class="grid-container">
+                <table id="customer-grid">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Phone Number</th>
+                            <th>Address</th>
+                            <th>Day</th>
+                            <th>Total Payable Amount</th>
+                            <th>Balance Amount</th>
+                            <th>Amount Paid (Current)</th>
+ 
+                            <th>Payment Mode</th>
+                            <th>Actions</th>
+                            <th>Payment Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Customer data will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <div id="add-customer-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>Add New Customer</h2>
+            <form id="add-customer-form">
+                <input type="text" id="customer-id" placeholder="Customer ID">
+                <input type="text" id="name" placeholder="Name" required>
+                <input type="tel" id="phone" placeholder="Phone Number" required>
+                <input type="text" id="address" placeholder="Address" required>
+                <select id="day" required>
+                    <option value="">Select Day</option>
+                    <option value="Sunday">Sunday</option>
+                    <option value="Monday">Monday</option>
+                    <option value="Tuesday">Tuesday</option>
+                    <option value="Wednesday">Wednesday</option>
+                    <option value="Thursday">Thursday</option>
+                    <option value="Friday">Friday</option>
+                    <option value="Saturday">Saturday</option>
+                </select>
+
+                <input type="number" id="total-payable-amount" placeholder="Total Payable Amount" required>
+                <input type="number" id="number-of-installments" placeholder="Number of Installments" required>
+                <input type="number" id="amount-paid-input" placeholder="Amount Paid" required>
+                <input type="date" id="account-opening-date" required>
+                <button type="submit">Add Customer</button>
+                <button type="button" id="delete-customer-btn" class="delete-btn" style="display: none;">Delete Customer</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
