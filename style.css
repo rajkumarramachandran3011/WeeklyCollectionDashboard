@@ -166,6 +166,19 @@ h1 {
     padding: 10px 15px; /* Reduced padding */
     text-align: left;
     border-bottom: 1px solid #3e5060;
+    white-space: nowrap; /* Prevent text wrapping in cells */
+}
+
+/* Hide columns 3-6 (Address, Day, Total Payable Amount, Balance Amount) */
+#customer-grid th:nth-child(4),
+#customer-grid td:nth-child(4),
+#customer-grid th:nth-child(5),
+#customer-grid td:nth-child(5),
+#customer-grid th:nth-child(6),
+#customer-grid td:nth-child(6),
+#customer-grid th:nth-child(7),
+#customer-grid td:nth-child(7) {
+    display: none;
 }
 
 #customer-grid th {
