@@ -1017,3 +1017,13 @@ h2 {
     font-weight: 600;
 
 }
+.amount-paid-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pay-btn-large {
+    padding: 12px 20px;
+    font-size: 1.1rem;
+}

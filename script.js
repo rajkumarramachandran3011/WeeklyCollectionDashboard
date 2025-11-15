@@ -79,26 +79,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             </td>
 
-                            <td data-label="Amount Paid (Current)"><input type="number" class="amount-paid-input" value="${paymentStatus === 'Paid' ? lastPaidAmount : ''}" ${paymentStatus === 'Paid' ? 'disabled' : ''} min="1" max="99999"></td>
-
-             
-
-                            <td data-label="Payment Mode">
-
-                                <select class="payment-mode-select" ${paymentStatus === 'Paid' ? 'disabled' : ''}>
-
-                                    <option value="Cash" ${paymentMode === 'Cash' ? 'selected' : ''}>Cash</option>
-
-                                    <option value="UPI" ${paymentMode === 'UPI' ? 'selected' : ''}>UPI</option>
-
-                                </select>
-
+                            <td data-label="Amount Paid">
+                                <div class="amount-paid-container">
+                                    <input type="number" class="amount-paid-input" value="${paymentStatus === 'Paid' ? lastPaidAmount : ''}" ${paymentStatus === 'Paid' ? 'disabled' : ''} min="1" max="99999">
+                                    <select class="payment-mode-select" ${paymentStatus === 'Paid' ? 'disabled' : ''}>
+                                        <option value="Cash" ${paymentMode === 'Cash' ? 'selected' : ''}>Cash</option>
+                                        <option value="UPI" ${paymentMode === 'UPI' ? 'selected' : ''}>UPI</option>
+                                    </select>
+                                </div>
                             </td>
-
                             <td data-label="Actions">
-
-                                ${paymentStatus === 'Paid' ? '<button class="edit-pay-btn"><i class="fas fa-edit"></i> Edit</button>' : '<button class="pay-btn"><i class="fas fa-money-bill-wave"></i> Pay</button>'}
-
+                                ${paymentStatus === 'Paid' ? '<button class="edit-pay-btn"><i class="fas fa-edit"></i> Edit</button>' : '<button class="pay-btn pay-btn-large"><i class="fas fa-money-bill-wave"></i> Pay</button>'}
                             </td>
 
                             <td data-label="Payment Status">
