@@ -1,17 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 :root {
-    --primary-color: #00a8ff;
-    --secondary-color: #9c88ff;
-    --background-color: #1e272e;
-    --surface-color: #2c3a47;
-    --text-color: #ecf0f1;
-    --shadow-color: rgba(0, 0, 0, 0.2);
+    --primary-color: #6a0dad; /* Purple */
+    --secondary-color: #9370db; /* Medium Purple */
+    --background-color: #f4f4f9; /* Light Grey */
+    --surface-color: rgba(255, 255, 255, 0.8); /* White with transparency */
+    --text-color: #333333; /* Dark Grey */
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --border-color: rgba(255, 255, 255, 0.2);
 }
 
 body {
     font-family: 'Poppins', sans-serif;
-    background-color: var(--background-color);
+    background: linear-gradient(to right, #a8c0ff, #3f2b96);
     color: var(--text-color);
     margin: 0;
     -webkit-font-smoothing: antialiased;
@@ -24,18 +25,39 @@ body {
     padding: 2rem;
 }
 
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+header, .week-navigation, .filter-section, .grid-container {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
 header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 2rem;
+    background-color: var(--surface-color);
+    padding: 1.5rem 2rem;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px 0 var(--shadow-color);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
 }
 
 h1 {
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: 600;
     color: var(--primary-color);
-    text-shadow: 0 2px 4px var(--shadow-color);
 }
 
 #add-customer-btn,
@@ -49,14 +71,14 @@ h1 {
     font-size: 1rem;
     font-weight: 500;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0, 168, 255, 0.2);
+    box-shadow: 0 4px 15px rgba(106, 13, 173, 0.2);
     margin-left: 10px;
 }
 
 #add-customer-btn:hover,
 #generate-report-btn:hover {
     transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0, 168, 255, 0.3);
+    box-shadow: 0 6px 20px rgba(106, 13, 173, 0.3);
 }
 
 .week-navigation {
@@ -67,6 +89,10 @@ h1 {
     background-color: var(--surface-color);
     padding: 0.5rem 1rem;
     border-radius: 10px;
+    box-shadow: 0 8px 32px 0 var(--shadow-color);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
 }
 
 .week-navigation button {
@@ -98,6 +124,13 @@ h1 {
     margin-bottom: 2rem;
     flex-wrap: wrap;
     gap: 1rem;
+    background-color: var(--surface-color);
+    padding: 1rem;
+    border-radius: 10px;
+    box-shadow: 0 8px 32px 0 var(--shadow-color);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
 }
 
 #selected-date-display {
@@ -113,7 +146,7 @@ h1 {
 }
 
 .day-filters button {
-    background-color: var(--surface-color);
+    background-color: rgba(255, 255, 255, 0.5);
     color: var(--text-color);
     border: 1px solid transparent;
     padding: 12px 20px;
@@ -130,22 +163,44 @@ h1 {
 }
 
 .day-filters button:hover:not(.active) {
-    background-color: #3e5060;
+    background-color: rgba(255, 255, 255, 0.7);
+}
+
+#search-input, #add-customer-form input, #add-customer-form select, .amount-paid-input, .payment-mode-select {
+    font-size: 1.1rem;
+    padding: 16px 20px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background-color: var(--surface-color);
+    color: var(--text-color);
+    transition: all 0.3s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#search-input:focus, #add-customer-form input:focus, #add-customer-form select:focus, .amount-paid-input:focus, .payment-mode-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(106, 13, 173, 0.1);
 }
 
 #search-input {
-    padding: 12px 20px;
-    border: 1px solid var(--surface-color);
-    background-color: var(--surface-color);
-    color: var(--text-color);
-    border-radius: 20px;
-    width: 280px;
-    transition: all 0.3s ease;
+    width: 320px;
 }
 
-#search-input:focus {
-    outline: none;
-    border-color: var(--primary-color);
+@media (max-width: 768px) {
+    #search-input {
+        width: 100%;
+    }
+}
+
+#add-customer-form input, #add-customer-form select {
+    /* Styles are now covered by the common selector above */
+}
+
+.amount-paid-input, .payment-mode-select {
+    /* Styles are now covered by the common selector above */
+    min-width: 120px;
 }
 
 .grid-container {
@@ -154,24 +209,22 @@ h1 {
     box-shadow: 0 8px 32px 0 var(--shadow-color);
     overflow-x: auto;
     padding: 1rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
 }
 
 #customer-grid {
     width: 100%;
     border-collapse: collapse;
-    table-layout: fixed; /* Added for better column control */
+    table-layout: fixed;
 }
 
 #customer-grid th, #customer-grid td {
-    padding: 10px 15px; /* Reduced padding */
+    padding: 15px;
     text-align: left;
-    border-bottom: 1px solid #3e5060;
-    white-space: nowrap; /* Prevent text wrapping in cells */
-}
-
-#customer-grid th:nth-child(n+3):nth-child(-n+7),
-#customer-grid td:nth-child(n+3):nth-child(-n+7) {
-    display: none;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
 }
 
 #customer-grid th {
@@ -181,42 +234,54 @@ h1 {
     text-transform: uppercase;
 }
 
+#customer-grid th:nth-child(1) { width: 20%; }
+#customer-grid th:nth-child(2) { width: 10%; }
+#customer-grid th:nth-child(3) { width: 15%; }
+#customer-grid th:nth-child(4) { width: 20%; }
+#customer-grid th:nth-child(5) { width: 15%; }
+#customer-grid th:nth-child(6) { width: 10%; }
+#customer-grid th:nth-child(7) { width: 10%; }
+
 #customer-grid tbody tr {
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 #customer-grid tbody tr:hover {
-    background-color: #3e5060;
+    background-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.01);
 }
 
 #customer-grid tbody tr:last-child td {
     border-bottom: none;
 }
 
-.edit-btn, .delete-btn {
+.edit-btn, .delete-btn, .pay-btn, .edit-pay-btn {
     color: white;
     border: none;
     padding: 8px 12px;
     border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
     margin-right: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .edit-btn {
-    background-color: #2980b9;
+    background-color: #9370db;
 }
 
 .edit-btn:hover {
-    background-color: #3498db;
+    background-color: #825ac4;
+    box-shadow: 0 4px 10px rgba(147, 112, 219, 0.4);
 }
 
 .delete-btn {
-    background-color: #c0392b;
+    background-color: #dc3545;
 }
 
 .delete-btn:hover {
-    background-color: #e74c3c;
+    background-color: #c82333;
+    box-shadow: 0 4px 10px rgba(220, 53, 69, 0.4);
 }
 
 .modal {
@@ -240,29 +305,18 @@ h1 {
 }
 
 .modal-content {
-    background: linear-gradient(135deg, #2c3a47, #1e272e);
+    background: var(--surface-color);
     margin: 5% auto;
     padding: 2.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-color);
     width: 90%;
     max-width: 550px;
     border-radius: 20px;
-    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.1);
     position: relative;
     animation: slideIn 0.4s ease;
-    overflow: hidden;
-}
-
-.modal-content::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 60%);
-    transform: rotate(30deg);
-    z-index: -1;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 @keyframes slideIn {
@@ -301,9 +355,9 @@ h2 {
 
 #add-customer-form input, #add-customer-form select {
     padding: 14px 18px;
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(255, 255, 255, 0.5);
     color: var(--text-color);
-    border: 1px solid transparent;
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     transition: all 0.3s ease;
     font-size: 1rem;
@@ -312,7 +366,8 @@ h2 {
 #add-customer-form input:focus, #add-customer-form select:focus {
     outline: none;
     border-color: var(--primary-color);
-    background-color: rgba(0, 0, 0, 0.3);
+    background-color: var(--surface-color);
+    box-shadow: 0 0 0 3px rgba(106, 13, 173, 0.2);
 }
 
 #add-customer-form button {
@@ -330,11 +385,11 @@ h2 {
 
 #add-customer-form button:hover {
     opacity: 0.9;
-    box-shadow: 0 4px 15px rgba(0, 168, 255, 0.2);
+    box-shadow: 0 4px 15px rgba(106, 13, 173, 0.2);
 }
 
 #delete-customer-btn {
-    background-color: #c0392b;
+    background-color: #dc3545;
     color: white;
     border: none;
     padding: 16px;
@@ -347,22 +402,8 @@ h2 {
 }
 
 #delete-customer-btn:hover {
-    background-color: #e74c3c;
-    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.2);
-}
-
-.delete-btn {
-    background-color: #e74c3c;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.delete-btn:hover {
-    background-color: #c0392b;
+    background-color: #c82333;
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.2);
 }
 
 @media (max-width: 768px) {
@@ -408,14 +449,14 @@ h2 {
     }
     #customer-grid tr {
         margin-bottom: 1.5rem;
-        border: 1px solid #3e5060;
+        border: 1px solid var(--border-color);
         border-radius: 15px;
         padding: 1.5rem;
-        background-color: #2c3a47;
+        background-color: var(--surface-color);
     }
     #customer-grid td {
         padding: 0.75rem 0;
-        border-bottom: 1px solid #3e5060;
+        border-bottom: 1px solid var(--border-color);
     }
     #customer-grid td:last-child {
         border-bottom: none;
@@ -433,73 +474,48 @@ h2 {
 }
 
 .amount-paid-input, .payment-mode-select {
-    background-color: transparent;
-    border: 1px solid transparent;
+    background-color: rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--border-color);
     color: var(--text-color);
     padding: 8px 12px;
     border-radius: 6px;
     transition: all 0.3s ease;
     font-family: 'Poppins', sans-serif;
-    width: 100%; /* Ensure input fills the cell */
-    box-sizing: border-box; /* Include padding and border in the element's total width and height */
-    min-width: 90px; /* Adjusted for values up to 100,000 */
+    width: 100%;
+    box-sizing: border-box;
+    min-width: 90px;
 }
 
 .amount-paid-input:focus, .payment-mode-select:focus {
     outline: none;
     border-color: var(--primary-color);
-    background-color: var(--background-color);
-    box-shadow: 0 0 0 3px rgba(0, 168, 255, 0.5); /* Add a subtle glow */
+    background-color: var(--surface-color);
+    box-shadow: 0 0 0 3px rgba(106, 13, 173, 0.2);
 }
 
-.amount-paid-input:disabled {
-    background-color: #3e5060; /* Darker background for disabled state */
-    color: #b0bec5; /* Lighter text color */
+.amount-paid-input:disabled, .payment-mode-select:disabled {
+    background-color: rgba(233, 236, 239, 0.5);
+    color: #6c757d;
     cursor: not-allowed;
-    border-color: #3e5060;
-}
-
-.save-btn {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.save-btn:hover {
-    background-color: #0097e6;
+    border-color: var(--border-color);
 }
 
 .pay-btn {
     background-color: #28a745;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    margin-right: 5px; /* Add spacing between buttons */
 }
 
 .pay-btn:hover {
     background-color: #218838;
+    box-shadow: 0 4px 10px rgba(40, 167, 69, 0.4);
 }
 
 .edit-pay-btn {
     background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
 }
 
 .edit-pay-btn:hover {
     background-color: #0056b3;
+    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.4);
 }
 
 .paid-status {

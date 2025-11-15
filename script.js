@@ -53,15 +53,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td data-label="ID">${customer.id}</td>
                 <td data-label="Name">${customer.name}</td>
-                <td data-label="Phone Number">${customer.phone}</td>
-                <td data-label="Address">${customer.address}</td>
                 <td data-label="Day">${customer.day}</td>
-
-                <td data-label="Total Payable Amount">${customer.totalPayableAmount}</td>
                 <td data-label="Balance Amount">${customer.balanceAmount}</td>
-                <td data-label="Amount Paid (Current)"><input type="number" class="amount-paid-input" value="${paymentStatus === 'Paid' ? lastPaidAmount : 0}" ${paymentStatus === 'Paid' ? 'disabled' : ''} min="1" max="99999"></td>
+                <td data-label="Amount Paid (Current)"><input type="number" class="amount-paid-input" value="${paymentStatus === 'Paid' ? lastPaidAmount : ''}" ${paymentStatus === 'Paid' ? 'disabled' : ''} min="1" max="99999"></td>
  
                 <td data-label="Payment Mode">
                     <select class="payment-mode-select" ${paymentStatus === 'Paid' ? 'disabled' : ''}>
@@ -70,10 +65,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     </select>
                 </td>
                 <td data-label="Actions">
-                    ${paymentStatus === 'Paid' ? '<button class="edit-pay-btn">Edit</button>' : '<button class="pay-btn">Pay</button>'}
+                    ${paymentStatus === 'Paid' ? '<button class="edit-pay-btn"><i class="fas fa-edit"></i> Edit</button>' : '<button class="pay-btn"><i class="fas fa-money-bill-wave"></i> Pay</button>'}
                 </td>
                 <td data-label="Payment Status">
-                    ${paymentStatus === 'Paid' ? '<span class="paid-status">Paid</span>' : '<span class="not-paid-status">Not Paid</span>'}
+                    ${paymentStatus === 'Paid' ? `<span class="paid-status">Paid</span><div class="paid-date">${new Date(payment.paymentDate).toLocaleString()}</div>` : '<span class="not-paid-status">Not Paid</span>'}
                 </td>
             `;
             customerGridBody.appendChild(row);
@@ -92,6 +87,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (dayFilter !== 'All') {
             filteredCustomers = filteredCustomers.filter(c => c.day === dayFilter);
         }
+
+        filteredCustomers = filteredCustomers.filter(c => {
+            const accountOpeningDate = new Date(c.accountOpeningDate);
+            return accountOpeningDate <= currentDate;
+        });
 
         if (searchTerm) {
             filteredCustomers = filteredCustomers.filter(c => 
@@ -122,11 +122,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     deleteCustomerBtn.addEventListener('click', () => {
         if (editingCustomerIndex !== null) {
-            customers.splice(editingCustomerIndex, 1);
-            saveCustomers();
-            editingCustomerIndex = null;
-            filterAndRender();
-            modal.style.display = 'none';
+            const confirmation = confirm('Are you sure you want to delete this customer? This action cannot be undone.');
+            if (confirmation) {
+                customers.splice(editingCustomerIndex, 1);
+                saveCustomers();
+                editingCustomerIndex = null;
+                filterAndRender();
+                modal.style.display = 'none';
+            }
         }
     });
 
@@ -186,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Handle Pay button click
         if (e.target.classList.contains('pay-btn')) {
-            const name = row.querySelector('td:nth-child(2)').textContent;
+            const name = row.querySelector('td:nth-child(1)').textContent;
             const customerIndex = customers.findIndex(c => c.name === name);
             if (customerIndex !== -1) {
                 const amountPaidInput = row.querySelector('.amount-paid-input');
@@ -194,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const paidAmount = parseInt(amountPaidInput.value);
 
                 if (isNaN(paidAmount) || paidAmount < 1) {
-                    alert('Amount Paid must be at least 1.');
+                    alert('Invalid amount. Please enter a number greater than 0.');
                     return;
                 }
 
@@ -205,7 +208,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 customers[customerIndex].paymentHistory[weekId] = {
                     amount: paidAmount,
                     mode: paymentModeSelect.value,
-                    status: 'Paid'
+                    status: 'Paid',
+                    paymentDate: new Date()
                 };
                 saveCustomers(); // Save updated customers to local storage
                 filterAndRender();
@@ -215,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Handle Edit button click (for payment)
         if (e.target.classList.contains('edit-pay-btn')) {
-            const name = row.querySelector('td:nth-child(2)').textContent;
+            const name = row.querySelector('td:nth-child(1)').textContent;
             const customerIndex = customers.findIndex(c => c.name === name);
             if (customerIndex !== -1) {
                 const payment = customers[customerIndex].paymentHistory[weekId];
@@ -227,10 +231,10 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Handle click on first 4 columns to open popup (Name, Phone, Day, Principal Amount)
+        // Handle click on first 2 columns to open popup (Name, Day)
         const clickedCell = e.target.closest('td');
-        if (clickedCell && clickedCell.cellIndex >= 1 && clickedCell.cellIndex <= 3) { // ID, Name, Phone, Day
-            const name = row.querySelector('td:nth-child(2)').textContent;
+        if (clickedCell && clickedCell.cellIndex >= 0 && clickedCell.cellIndex <= 1) { // Name, Day
+            const name = row.querySelector('td:nth-child(1)').textContent;
             const customerIndex = customers.findIndex(c => c.name === name);
             const customer = customers[customerIndex];
 
@@ -331,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 color: { rgb: "FFFFFF" }
             },
             fill: {
-                fgColor: { rgb: "00a8ff" }
+                fgColor: { rgb: "6a0dad" }
             }
         };
 
