@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             </td>
 
-                            <td data-label="Day">
+                            <td data-label="Day" style="display: none;">
 
                                 <div>${customer.day}</div>
 
