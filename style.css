@@ -882,6 +882,10 @@ h2 {
 
     }
 
+    #customer-grid td[data-label="Day"] {
+        display: none;
+    }
+
     #customer-grid td::before {
 
         content: attr(data-label);
