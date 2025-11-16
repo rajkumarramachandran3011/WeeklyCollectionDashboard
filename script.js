@@ -22,6 +22,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // Preselect current day filter
+    const preselectCurrentDayFilter = () => {
+        const today = new Date();
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const currentDayName = days[today.getDay()];
+
+        // Remove active class from any initially active button (like Sunday from index.html)
+        const initiallyActiveButton = document.querySelector('.day-filter.active');
+        if (initiallyActiveButton) {
+            initiallyActiveButton.classList.remove('active');
+        }
+
+        // Find and activate the button for the current day
+        const currentDayButton = document.querySelector(`.day-filter[data-day="${currentDayName}"]`);
+        if (currentDayButton) {
+            currentDayButton.classList.add('active');
+        } else {
+            // Fallback to Sunday if current day button not found (shouldn't happen with full day list)
+            document.querySelector('.day-filter[data-day="Sunday"]').classList.add('active');
+        }
+    };
+
     // Save customers to Local Storage
     const saveCustomers = () => {
         localStorage.setItem('customers', JSON.stringify(customers));
@@ -55,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         row.innerHTML = `
 
-                            <td data-label="Name">
+                            <td data-label="Name" class="editable-customer-info">
 
                                 <div class="customer-name">${customer.name}</div>
 
@@ -71,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             </td>
 
-                            <td data-label="Balance Amount">
+                            <td data-label="Balance Amount" class="editable-customer-info">
 
                                 <div class="balance-amount">₹${customer.balanceAmount.toLocaleString('en-IN')}</div>
 
@@ -115,57 +137,32 @@ document.addEventListener('DOMContentLoaded', () => {
             
 
                 const filterAndRender = () => {
-
-                    const dayFilter = document.querySelector('.day-filter.active').dataset.day;
-
+                    const activeDayFilterButton = document.querySelector('.day-filter.active');
+                    const dayFilter = activeDayFilterButton ? activeDayFilterButton.dataset.day : 'All'; // Default to 'All' if no active button
                     const searchTerm = searchInput.value.toLowerCase();
-
-            
 
                     let filteredCustomers = customers;
 
-            
-
                     if (dayFilter !== 'All') {
-
                         filteredCustomers = filteredCustomers.filter(c => c.day === dayFilter);
-
                     }
-
-            
 
                     filteredCustomers = filteredCustomers.filter(c => {
-
                         const accountOpeningDate = new Date(c.accountOpeningDate);
-
                         const oneDayAgo = new Date(currentDate);
-
                         oneDayAgo.setDate(currentDate.getDate() - 1); // Set to 1 day before currentDate
-
                         return accountOpeningDate < oneDayAgo;
-
                     });
 
-            
-
                     if (searchTerm) {
-
                         filteredCustomers = filteredCustomers.filter(c => 
-
                             c.name.toLowerCase().includes(searchTerm) || 
-
                             c.phone.toLowerCase().includes(searchTerm) ||
-
                             (c.address && c.address.toLowerCase().includes(searchTerm))
-
                         );
-
                     }
 
-            
-
                     renderGrid(filteredCustomers);
-
                 };
 
             
@@ -175,22 +172,16 @@ document.addEventListener('DOMContentLoaded', () => {
             
 
                 addCustomerBtn.addEventListener('click', () => {
-
-                    editingCustomerIndex = null;
-
-                    document.querySelector('#add-customer-modal h2').textContent = 'Add New Customer';
-
-                    document.querySelector('#add-customer-form button').textContent = 'Add Customer';
-
-                    addCustomerForm.reset();
-
-                    document.getElementById('customer-id').value = getNextCustomerId();
-
-                    deleteCustomerBtn.style.display = 'none'; // Hide delete button when adding new customer
-
-                    modal.style.display = 'block';
-
-                });
+    editingCustomerIndex = null;
+    document.querySelector('#add-customer-modal h2').textContent = 'Add New Customer';
+    document.querySelector('#add-customer-form button').textContent = 'Add Customer';
+    addCustomerForm.reset();
+    document.getElementById('customer-id').value = getNextCustomerId();
+    const selectedDay = document.querySelector('.day-filter.active').dataset.day;
+    document.getElementById('day').value = selectedDay;
+    deleteCustomerBtn.style.display = 'none'; // Hide delete button when adding new customer
+    modal.style.display = 'block';
+});
 
             
 
@@ -482,9 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         document.getElementById('number-of-installments').value = customer.numberOfInstallments;
 
-                        // The balance-amount input is removed, so we don't set its value here.
-
-                        document.getElementById('amount-paid-input').value = customer.amountPaid;
+                                                // The balance-amount input is removed, so we don't set its value here.
 
                         document.getElementById('account-opening-date').value = customer.accountOpeningDate;
 
@@ -520,15 +509,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             
 
-                const updateSelectedDate = (day) => {
+                                const updateSelectedDate = (day) => {
 
-                    if (day === 'All') {
+            
 
-                        selectedDateDisplay.textContent = '';
+                                    if (day === 'All') {
 
-                        return;
+            
 
-                    }
+                                        selectedDateDisplay.textContent = 'All Customers';
+
+            
+
+                                        return;
+
+            
+
+                                    }
 
                     const dayIndex = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(day);
 
