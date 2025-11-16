@@ -1050,18 +1050,793 @@ h2 {
 
 .not-paid-status {
 
+
+
     color: #dc3545;
+
+
 
     font-weight: 600;
 
-}
-.amount-paid-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+
+
 }
 
+
+
+.amount-paid-container {
+
+
+
+    display: flex;
+
+
+
+    align-items: center;
+
+
+
+    gap: 10px;
+
+
+
+}
+
+
+
+
+
+
+
 .pay-btn-large {
+
+
+
     padding: 12px 20px;
+
+
+
     font-size: 1.1rem;
+
+
+
+}
+
+
+
+
+
+
+
+/* Styles for Transaction History Modal */
+
+
+
+#transaction-history-modal .modal-content {
+
+
+
+    max-width: 700px; /* Slightly wider for the grid */
+
+
+
+}
+
+
+
+
+
+
+
+.highlighted-amounts {
+
+
+
+
+
+
+
+    display: flex;
+
+
+
+
+
+
+
+    justify-content: space-around;
+
+
+
+
+
+
+
+    gap: 1rem;
+
+
+
+
+
+
+
+    flex-wrap: wrap;
+
+
+
+
+
+
+
+    margin-top: 1rem;
+
+
+
+
+
+
+
+    margin-bottom: 1rem;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.highlighted-amounts p {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    font-size: 1.5rem; /* Large font for the entire line */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    font-weight: 700; /* Highlighted for the entire line */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    color: var(--primary-color); /* Highlighted color for the entire line */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    margin: 0.5rem 0; /* Add some vertical spacing */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.highlighted-amount {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /* This class is now primarily for ensuring the color and weight on the span,
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       as the font-size is handled by the parent p tag. */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    color: var(--primary-color);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    font-weight: 700;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.history-summary {
+
+
+
+
+
+
+
+    background-color: rgba(255, 255, 255, 0.6);
+
+
+
+
+
+
+
+    border-radius: 10px;
+
+
+
+
+
+
+
+    padding: 1rem 1.5rem;
+
+
+
+
+
+
+
+    margin-bottom: 1.5rem;
+
+
+
+
+
+
+
+    display: flex;
+
+
+
+
+
+
+
+    justify-content: space-around;
+
+
+
+
+
+
+
+    gap: 1rem;
+
+
+
+
+
+
+
+    flex-wrap: wrap;
+
+
+
+
+
+
+
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+.history-summary p {
+
+
+
+    margin: 0;
+
+
+
+    font-size: 1.1rem;
+
+
+
+    font-weight: 500;
+
+
+
+    color: var(--text-color);
+
+
+
+}
+
+
+
+
+
+
+
+.history-summary p span {
+
+
+
+    font-weight: 700;
+
+
+
+    color: var(--primary-color);
+
+
+
+}
+
+
+
+
+
+
+
+.history-grid-container {
+
+
+
+    max-height: 300px; /* Fixed height for scrollability */
+
+
+
+    overflow-y: auto;
+
+
+
+    border: 1px solid var(--border-color);
+
+
+
+    border-radius: 10px;
+
+
+
+    background-color: rgba(255, 255, 255, 0.5);
+
+
+
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+
+
+
+}
+
+
+
+
+
+
+
+#history-grid {
+
+
+
+    width: 100%;
+
+
+
+    border-collapse: collapse;
+
+
+
+}
+
+
+
+
+
+
+
+#history-grid th, #history-grid td {
+
+
+
+    padding: 12px 15px;
+
+
+
+    text-align: left;
+
+
+
+    border-bottom: 1px solid var(--border-color);
+
+
+
+}
+
+
+
+
+
+
+
+#history-grid th {
+
+
+
+    background-color: var(--primary-color);
+
+
+
+    color: white;
+
+
+
+    font-weight: 600;
+
+
+
+    font-size: 0.9rem;
+
+
+
+    text-transform: uppercase;
+
+
+
+    position: sticky;
+
+
+
+    top: 0;
+
+
+
+    z-index: 1;
+
+
+
+}
+
+
+
+
+
+
+
+#history-grid tbody tr:nth-child(even) {
+
+
+
+    background-color: rgba(255, 255, 255, 0.3);
+
+
+
+}
+
+
+
+
+
+
+
+#history-grid tbody tr:hover {
+
+
+
+    background-color: rgba(255, 255, 255, 0.7);
+
+
+
+}
+
+
+
+
+
+
+
+#history-grid td:first-child {
+
+
+
+    font-weight: 500;
+
+
+
+}
+
+
+
+
+
+
+
+#history-grid td:last-child {
+
+
+
+    font-weight: 600;
+
+
+
+    color: var(--primary-color);
+
+
+
+}
+
+
+
+/* New styles for responsive transaction history table */
+
+.transaction-history-grid {
+    background-color: var(--surface-color);
+    border-radius: 15px;
+    box-shadow: 0 8px 32px 0 var(--shadow-color);
+    overflow-x: auto; /* Allows horizontal scrolling on desktop if table is too wide */
+    padding: 1rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    margin-top: 1.5rem; /* Add some space above the table */
+}
+
+.transaction-history-grid table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed; /* Ensures columns maintain their width */
+}
+
+.transaction-history-grid th,
+.transaction-history-grid td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap; /* Prevent text wrapping in cells */
+}
+
+.transaction-history-grid th {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    position: sticky; /* Keep header visible on scroll */
+    top: 0;
+    z-index: 1;
+}
+
+.transaction-history-grid tbody tr {
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.transaction-history-grid tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.01);
+}
+
+.transaction-history-grid tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Responsive styles for transaction history table */
+@media (max-width: 768px) {
+    .transaction-history-grid {
+        overflow-x: hidden; /* Hide horizontal scroll on mobile */
+    }
+
+    .transaction-history-grid table {
+        border: none; /* Remove table border on mobile */
+    }
+
+    .transaction-history-grid thead {
+        display: none; /* Hide table header on mobile */
+    }
+
+    .transaction-history-grid tbody,
+    .transaction-history-grid tr,
+    .transaction-history-grid td {
+        display: block; /* Make table elements block-level */
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .transaction-history-grid tr {
+        margin-bottom: 1.5rem;
+        border: 1px solid var(--border-color);
+        border-radius: 15px;
+        padding: 1.5rem;
+        background-color: var(--surface-color);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+
+    .transaction-history-grid td {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--border-color);
+        text-align: right; /* Align content to the right */
+        position: relative;
+        padding-left: 50%; /* Make space for the data-label */
+        white-space: normal; /* Allow text wrapping for content */
+    }
+
+    .transaction-history-grid td:last-child {
+        border-bottom: none;
+    }
+
+    .transaction-history-grid td::before {
+        content: attr(data-label);
+        font-weight: bold;
+        color: var(--primary-color);
+        display: block;
+        position: absolute;
+        left: 0;
+        width: 45%; /* Adjust width as needed */
+        padding-left: 15px;
+        text-align: left;
+    }
 }

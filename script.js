@@ -11,8 +11,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const weekRangeEl = document.getElementById('week-range');
     const selectedDateDisplay = document.getElementById('selected-date-display');
 
+    // New DOM elements for Transaction History Modal
+    const transactionHistoryModal = document.getElementById('transaction-history-modal');
+    const transactionHistoryCloseBtn = document.querySelector('.transaction-history-close-btn');
+    const historyCustomerName = document.getElementById('history-customer-name');
+    const historyTotalPayable = document.getElementById('history-total-payable');
+    const historyBalanceAmount = document.getElementById('history-balance-amount');
+    const historyGridBody = transactionHistoryModal.querySelector('#transaction-history-table-body');
+
     let currentDate = new Date();
     let customers = [];
+
+    // Function to update the displayed week range
+    const updateWeekRange = () => {
+        const startOfWeek = new Date(currentDate);
+        startOfWeek.setDate(currentDate.getDate() - currentDate.getDay()); // Go to Sunday
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6); // Go to Saturday
+
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        weekRangeEl.textContent = `${startOfWeek.toLocaleDateString('en-US', options)} - ${endOfWeek.toLocaleDateString('en-US', options)}`;
+    };
+
+    // Function to update the selected date display
+    const updateSelectedDate = (dayName) => {
+        const today = new Date(currentDate);
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const currentDayIndex = today.getDay();
+        const targetDayIndex = days.indexOf(dayName);
+
+        if (targetDayIndex !== -1) {
+            const diff = targetDayIndex - currentDayIndex;
+            today.setDate(today.getDate() + diff);
+        }
+        selectedDateDisplay.textContent = `Selected Day: ${today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
+    };
 
     // Load customers from Local Storage
     const loadCustomers = () => {
@@ -42,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Fallback to Sunday if current day button not found (shouldn't happen with full day list)
             document.querySelector('.day-filter[data-day="Sunday"]').classList.add('active');
         }
+        updateSelectedDate(currentDayName); // Update the selected date display for the preselected day
     };
 
     // Save customers to Local Storage
@@ -60,7 +94,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const getWeekId = (date) => {
-        const firstDay = new Date(date.setDate(date.getDate() - date.getDay()));
+        const firstDay = new Date(date); // Create a new Date object to avoid modifying the original
+        firstDay.setDate(date.getDate() - date.getDay());
         return firstDay.toISOString().split('T')[0];
     }
 
@@ -73,64 +108,117 @@ document.addEventListener('DOMContentLoaded', () => {
             const lastPaidAmount = payment ? payment.amount : 0;
             const paymentMode = payment ? payment.mode : 'Cash';
 
-                        const row = document.createElement('tr');
+            const row = document.createElement('tr');
+            row.dataset.customerId = customer.id; // Add data-customer-id to the row
 
-                        row.innerHTML = `
+            row.innerHTML = `
+                <td data-label="Name" class="customer-name-cell">
+                    <div class="customer-name">${customer.name}</div>
+                    <div class="customer-id">${customer.id}</div>
+                </td>
+                <td data-label="Day" style="display: none;">
+                    <div>${customer.day}</div>
+                    <div class="customer-address">${customer.address}</div>
+                </td>
+                <td data-label="Balance Amount" class="balance-amount-cell">
+                    <div class="balance-amount">₹${customer.balanceAmount.toLocaleString('en-IN')}</div>
+                    <div class="total-payable">of ₹${customer.totalPayableAmount.toLocaleString('en-IN')}</div>
+                </td>
+                <td data-label="Amount Paid">
+                    <div class="amount-paid-container">
+                        <input type="number" class="amount-paid-input" value="${paymentStatus === 'Paid' ? lastPaidAmount : ''}" ${paymentStatus === 'Paid' ? 'disabled' : ''} min="1" max="99999">
+                        <select class="payment-mode-select" ${paymentStatus === 'Paid' ? 'disabled' : ''}>
+                            <option value="Cash" ${paymentMode === 'Cash' ? 'selected' : ''}>Cash</option>
+                            <option value="UPI" ${paymentMode === 'UPI' ? 'selected' : ''}>UPI</option>
+                        </select>
+                    </div>
+                </td>
+                <td data-label="Actions">
+                    ${paymentStatus === 'Paid' ? '<button class="edit-pay-btn"><i class="fas fa-edit"></i> Edit</button>' : '<button class="pay-btn pay-btn-large"><i class="fas fa-money-bill-wave"></i> Pay</button>'}
+                </td>
+                <td data-label="Payment Status">
+                    ${paymentStatus === 'Paid' ? `<span class="paid-status">Paid</span><div class="paid-date">${new Date(payment.paymentDate).toLocaleString()}</div>` : '<span class="not-paid-status">Not Paid</span>'}
+                </td>
+            `;
+            customerGridBody.appendChild(row);
+        }
+    };
 
-                            <td data-label="Name" class="editable-customer-info">
+    // Function to show/edit customer details in the add-customer-modal
+    const showCustomerDetailsModal = (customer) => {
+        document.querySelector('#add-customer-modal h2').textContent = 'Edit Customer';
+        document.querySelector('#add-customer-form button[type="submit"]').textContent = 'Update Customer';
 
-                                <div class="customer-name">${customer.name}</div>
+        document.getElementById('customer-id').value = customer.id;
+        document.getElementById('name').value = customer.name;
+        document.getElementById('phone').value = customer.phone;
+        document.getElementById('address').value = customer.address;
+        document.getElementById('day').value = customer.day;
+        document.getElementById('total-payable-amount').value = customer.totalPayableAmount;
+        // Assuming numberOfInstallments is part of customer object
+        document.getElementById('number-of-installments').value = customer.numberOfInstallments || '';
+        document.getElementById('account-opening-date').value = customer.accountOpeningDate;
 
-                                <div class="customer-id">${customer.id}</div>
+        editingCustomerIndex = customers.findIndex(c => c.id === customer.id);
+        deleteCustomerBtn.style.display = 'block'; // Show delete button when editing
+        modal.style.display = 'block';
+    };
 
-                            </td>
+    // Function to show transaction history in the transaction-history-modal
+    const showTransactionHistoryModal = (customer) => {
+        historyCustomerName.textContent = customer.name;
+        historyTotalPayable.textContent = `₹${customer.totalPayableAmount.toLocaleString('en-IN')}`;
+        historyBalanceAmount.textContent = `₹${customer.balanceAmount.toLocaleString('en-IN')}`;
+        historyGridBody.innerHTML = ''; // Clear previous history
 
-                            <td data-label="Day" style="display: none;">
+        let totalPaidAmount = 0; // Initialize total paid amount
 
-                                <div>${customer.day}</div>
+        if (customer.paymentHistory && Object.keys(customer.paymentHistory).length > 0) {
+            const sortedWeeks = Object.keys(customer.paymentHistory).sort((a, b) => new Date(a) - new Date(b));
+            let weekNumber = 1; // Initialize week number
 
-                                <div class="customer-address">${customer.address}</div>
+            sortedWeeks.forEach(weekId => {
+                const payment = customer.paymentHistory[weekId];
+                const row = document.createElement('tr');
+                // Format weekId to a more readable date
+                const weekDate = new Date(weekId).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 
-                            </td>
+                row.innerHTML = `
+                    <td data-label="Week No.">${weekNumber++}</td> <!-- Week Number -->
+                    <td data-label="Week">${weekDate}</td> <!-- Week Date -->
+                    <td data-label="Amount Paid">₹${payment.amount.toLocaleString('en-IN')} (${payment.mode})</td> <!-- Amount Paid -->
+                `;
+                historyGridBody.appendChild(row);
 
-                            <td data-label="Balance Amount" class="editable-customer-info">
+                totalPaidAmount += payment.amount; // Add to total paid amount
+            });
+        } else {
+            const row = document.createElement('tr');
+            // colspan should be 3 now as there are 3 columns
+            row.innerHTML = `<td colspan="3" style="text-align: center;">No transaction history available.</td>`;
+            historyGridBody.appendChild(row);
+        }
 
-                                <div class="balance-amount">₹${customer.balanceAmount.toLocaleString('en-IN')}</div>
+        // Update the total paid amount display
+        document.getElementById('total-paid-amount').textContent = `₹${totalPaidAmount.toLocaleString('en-IN')}`;
 
-                                <div class="total-payable">of ₹${customer.totalPayableAmount.toLocaleString('en-IN')}</div>
+        transactionHistoryModal.style.display = 'block';
+    };
 
-                            </td>
+    let editingCustomerIndex = null;
 
-                            <td data-label="Amount Paid">
-                                <div class="amount-paid-container">
-                                    <input type="number" class="amount-paid-input" value="${paymentStatus === 'Paid' ? lastPaidAmount : ''}" ${paymentStatus === 'Paid' ? 'disabled' : ''} min="1" max="99999">
-                                    <select class="payment-mode-select" ${paymentStatus === 'Paid' ? 'disabled' : ''}>
-                                        <option value="Cash" ${paymentMode === 'Cash' ? 'selected' : ''}>Cash</option>
-                                        <option value="UPI" ${paymentMode === 'UPI' ? 'selected' : ''}>UPI</option>
-                                    </select>
-                                </div>
-                            </td>
-                            <td data-label="Actions">
-                                ${paymentStatus === 'Paid' ? '<button class="edit-pay-btn"><i class="fas fa-edit"></i> Edit</button>' : '<button class="pay-btn pay-btn-large"><i class="fas fa-money-bill-wave"></i> Pay</button>'}
-                            </td>
+    // Event Listeners for week navigation
+    prevWeekBtn.addEventListener('click', () => {
+        currentDate.setDate(currentDate.getDate() - 7);
+        updateWeekRange();
+        filterAndRender();
+    });
 
-                            <td data-label="Payment Status">
-
-                                ${paymentStatus === 'Paid' ? `<span class="paid-status">Paid</span><div class="paid-date">${new Date(payment.paymentDate).toLocaleString()}</div>` : '<span class="not-paid-status">Not Paid</span>'}
-
-                            </td>
-
-                        `;
-
-                        customerGridBody.appendChild(row);
-
-                    }
-
-                };
-
-            
-
-                let editingCustomerIndex = null;
+    nextWeekBtn.addEventListener('click', () => {
+        currentDate.setDate(currentDate.getDate() + 7);
+        updateWeekRange();
+        filterAndRender();
+    });
 
             
 
@@ -138,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const filterAndRender = () => {
                     const activeDayFilterButton = document.querySelector('.day-filter.active');
-                    const dayFilter = activeDayFilterButton ? activeDayFilterButton.dataset.day : 'All'; // Default to 'All' if no active button
+                    const dayFilter = activeDayFilterButton ? activeDayFilterButton.dataset.day : 'All';
                     const searchTerm = searchInput.value.toLowerCase();
 
                     let filteredCustomers = customers;
@@ -147,16 +235,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         filteredCustomers = filteredCustomers.filter(c => c.day === dayFilter);
                     }
 
-                    filteredCustomers = filteredCustomers.filter(c => {
-                        const accountOpeningDate = new Date(c.accountOpeningDate);
-                        const oneDayAgo = new Date(currentDate);
-                        oneDayAgo.setDate(currentDate.getDate() - 1); // Set to 1 day before currentDate
-                        return accountOpeningDate < oneDayAgo;
-                    });
-
                     if (searchTerm) {
-                        filteredCustomers = filteredCustomers.filter(c => 
-                            c.name.toLowerCase().includes(searchTerm) || 
+                        filteredCustomers = filteredCustomers.filter(c =>
+                            c.name.toLowerCase().includes(searchTerm) ||
                             c.phone.toLowerCase().includes(searchTerm) ||
                             (c.address && c.address.toLowerCase().includes(searchTerm))
                         );
@@ -167,21 +248,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
             
 
-                const deleteCustomerBtn = document.getElementById('delete-customer-btn');
+                                const deleteCustomerBtn = document.getElementById('delete-customer-btn');
 
             
 
-                addCustomerBtn.addEventListener('click', () => {
-    editingCustomerIndex = null;
-    document.querySelector('#add-customer-modal h2').textContent = 'Add New Customer';
-    document.querySelector('#add-customer-form button').textContent = 'Add Customer';
-    addCustomerForm.reset();
-    document.getElementById('customer-id').value = getNextCustomerId();
-    const selectedDay = document.querySelector('.day-filter.active').dataset.day;
-    document.getElementById('day').value = selectedDay;
-    deleteCustomerBtn.style.display = 'none'; // Hide delete button when adding new customer
-    modal.style.display = 'block';
-});
+                
+
+            
+
+                                addCustomerBtn.addEventListener('click', () => {
+
+            
+
+                    editingCustomerIndex = null;
+
+            
+
+                    document.querySelector('#add-customer-modal h2').textContent = 'Add New Customer';
+
+            
+
+                    document.querySelector('#add-customer-form button[type="submit"]').textContent = 'Add Customer'; // Ensure button text is "Add Customer"
+
+            
+
+                    addCustomerForm.reset();
+
+            
+
+                    document.getElementById('customer-id').value = getNextCustomerId();
+
+            
+
+                    const selectedDay = document.querySelector('.day-filter.active').dataset.day;
+
+            
+
+                    document.getElementById('day').value = selectedDay;
+
+            
+
+                    deleteCustomerBtn.style.display = 'none'; // Hide delete button when adding new customer
+
+            
+
+                    modal.style.display = 'block';
+
+            
+
+                });
 
             
 
@@ -429,258 +544,94 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             filterAndRender();
 
-                        }
+                                            }
 
-                        return;
+                                            return;
 
-                    }
+                                        }
 
-            
+                        
 
-                    // Handle click on first 2 columns to open popup (Name, Day)
+                                        // Handle click on Name cell to show customer details
 
-                    const clickedCell = e.target.closest('td');
+                                        if (e.target.closest('.customer-name-cell')) {
 
-                    if (clickedCell && clickedCell.cellIndex >= 0 && clickedCell.cellIndex <= 2) { // Name, Day, Balance
+                                            const customerId = row.dataset.customerId;
 
-                        const customerId = row.querySelector('.customer-id').textContent;
+                                            const customer = customers.find(c => c.id === customerId);
 
-                        const customerIndex = customers.findIndex(c => c.id === customerId);
+                                            if (customer) {
 
-                        const customer = customers[customerIndex];
+                                                showCustomerDetailsModal(customer);
 
-            
+                                            }
 
-                        document.querySelector('#add-customer-modal h2').textContent = 'Edit Customer';
+                                            return;
 
-                        document.querySelector('#add-customer-form button[type="submit"]').textContent = 'Update Customer';
+                                        }
 
-            
+                        
 
-                        document.getElementById('customer-id').value = customer.id;
+                                        // Handle click on Balance Amount cell to show transaction history
 
-                        document.getElementById('name').value = customer.name;
+                                        if (e.target.closest('.balance-amount-cell')) {
 
-                        document.getElementById('phone').value = customer.phone;
+                                            const customerId = row.dataset.customerId;
 
-                        document.getElementById('address').value = customer.address;
+                                            const customer = customers.find(c => c.id === customerId);
 
-                        document.getElementById('day').value = customer.day;
+                                            if (customer) {
 
-            
+                                                showTransactionHistoryModal(customer);
 
-                        document.getElementById('total-payable-amount').value = customer.totalPayableAmount;
+                                            }
 
-                        document.getElementById('number-of-installments').value = customer.numberOfInstallments;
+                                            return;
 
-                                                // The balance-amount input is removed, so we don't set its value here.
+                                        }
 
-                        document.getElementById('account-opening-date').value = customer.accountOpeningDate;
+                                    });
 
-            
+                        
 
-                        deleteCustomerBtn.style.display = 'block'; // Show delete button when editing
+                                    // Event listener for closing the transaction history modal
 
-                        editingCustomerIndex = customerIndex;
+                                    transactionHistoryCloseBtn.addEventListener('click', () => {
 
-                        modal.style.display = 'block';
+                                        transactionHistoryModal.style.display = 'none';
 
-                    }
+                                    });
 
-                });
+                        
 
-            
+                                    window.addEventListener('click', (e) => {
 
-                const updateWeekRange = () => {
+                                        if (e.target === modal) {
 
-                    const firstDay = new Date(new Date(currentDate).setDate(currentDate.getDate() - currentDate.getDay()));
+                                            modal.style.display = 'none';
 
-                    const lastDay = new Date(new Date(currentDate).setDate(currentDate.getDate() - currentDate.getDay() + 6));
+                                        }
 
-                    const options = { month: 'short', day: 'numeric', year: 'numeric' };
+                                                                                if (e.target === transactionHistoryModal) {
 
-                    weekRangeEl.textContent = `${firstDay.toLocaleDateString('en-US', options)} - ${lastDay.toLocaleDateString('en-US', options)}`;
+                                                                                    transactionHistoryModal.style.display = 'none';
 
-                    updateSelectedDate(document.querySelector('.day-filter.active').dataset.day);
+                                                                                }
 
-                    filterAndRender();
+                                                                            });
 
-                };
+                                        
 
-            
+                                            // Initial calls to load data and render UI
 
-                                const updateSelectedDate = (day) => {
+                                            loadCustomers();
 
-            
+                                            preselectCurrentDayFilter();
 
-                                    if (day === 'All') {
+                                            updateWeekRange();
 
-            
+                                            filterAndRender();
 
-                                        selectedDateDisplay.textContent = 'All Customers';
-
-            
-
-                                        return;
-
-            
-
-                                    }
-
-                    const dayIndex = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(day);
-
-                    const firstDayOfWeek = new Date(new Date(currentDate).setDate(currentDate.getDate() - currentDate.getDay()));
-
-                    const selectedDate = new Date(firstDayOfWeek.setDate(firstDayOfWeek.getDate() + dayIndex));
-
-                    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-
-                    selectedDateDisplay.textContent = selectedDate.toLocaleDateString('en-US', options);
-
-                };
-
-            
-
-                prevWeekBtn.addEventListener('click', () => {
-
-                    currentDate.setDate(currentDate.getDate() - 7);
-
-                    updateWeekRange();
-
-                });
-
-            
-
-                nextWeekBtn.addEventListener('click', () => {
-
-                    currentDate.setDate(currentDate.getDate() + 7);
-
-                    updateWeekRange();
-
-                });
-
-            
-
-                const generateReportBtn = document.getElementById('generate-report-btn');
-
-            
-
-                generateReportBtn.addEventListener('click', () => {
-
-                    const weekId = getWeekId(new Date(currentDate));
-
-                    const reportData = [
-
-                        ['ID', 'Name', 'Date', 'Total Payable Amount', 'Balance Amount', 'Amount Paid', 'Payment Mode', 'Payment Status']
-
-                    ];
-
-            
-
-                    const dayFilter = document.querySelector('.day-filter.active').dataset.day;
-
-                    let reportDate = new Date(currentDate);
-
-                    if (dayFilter !== 'All') {
-
-                        const dayIndex = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(dayFilter);
-
-                        const firstDayOfWeek = new Date(new Date(currentDate).setDate(currentDate.getDate() - currentDate.getDay()));
-
-                        reportDate = new Date(firstDayOfWeek.setDate(firstDayOfWeek.getDate() + dayIndex));
-
-                    }
-
-            
-
-                    customers.forEach(customer => {
-
-                        const payment = customer.paymentHistory ? customer.paymentHistory[weekId] : null;
-
-                        const paymentStatus = payment ? payment.status : 'Pending';
-
-                        const amountPaid = payment ? payment.amount : 0;
-
-                        const paymentMode = payment ? payment.mode : 'N/A';
-
-                        const reportRow = [
-
-                            customer.id,
-
-                            customer.name,
-
-                            reportDate.toLocaleDateString(),
-
-                            customer.totalPayableAmount,
-
-                            customer.balanceAmount,
-
-                            amountPaid,
-
-                            paymentMode,
-
-                            paymentStatus
-
-                        ];
-
-                        reportData.push(reportRow);
-
-                    });
-
-            
-
-                    const ws = XLSX.utils.aoa_to_sheet(reportData);
-
-                    const wb = XLSX.utils.book_new();
-
-                    XLSX.utils.book_append_sheet(wb, ws, 'Weekly Report');
-
-            
-
-                    // Add styling
-
-                    const headerStyle = {
-
-                        font: {
-
-                            bold: true,
-
-                            color: { rgb: "FFFFFF" }
-
-                        },
-
-                        fill: {
-
-                            fgColor: { rgb: "6a0dad" }
-
-                        }
-
-                    };
-
-            
-
-                    const headerRange = XLSX.utils.decode_range(ws['!ref']);
-
-                    for (let C = headerRange.s.c; C <= headerRange.e.c; ++C) {
-
-                        const cell = ws[XLSX.utils.encode_cell({ r: 0, c: C })];
-
-                        cell.s = headerStyle;
-
-                    }
-
-            
-
-                    XLSX.writeFile(wb, 'weekly_report.xlsx');
-
-                });
-
-            
-
-                loadCustomers();
-
-                updateWeekRange();
-
-            });
+                                        });
 
             

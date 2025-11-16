@@ -95,6 +95,35 @@
         </div>
     </div>
 
+    <div id="transaction-history-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn transaction-history-close-btn">&times;</span>
+            <h2>Transaction History for <span id="history-customer-name"></span></h2>
+            <div class="history-summary">
+                <div class="highlighted-amounts">
+                    <p>Total Payable: <span id="history-total-payable" class="highlighted-amount"></span></p>
+                    <p>Balance Amount: <span id="history-balance-amount" class="highlighted-amount"></span></p>
+                    <p>Total Paid: <span id="total-paid-amount" class="highlighted-amount"></span></p>
+                </div>
+            </div>
+            <div class="transaction-history-grid responsive-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Week No.</th>
+                            <th>Week</th>
+                            <th>Amount Paid</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transaction-history-table-body">
+                        <!-- Transaction history rows will be inserted here by JavaScript.
+                             Ensure each td has a data-label attribute for responsiveness. -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
