@@ -61,7 +61,9 @@ h1 {
 }
 
 #add-customer-btn,
-#generate-report-btn {
+#generate-report-btn,
+#download-excel-btn,
+#download-book-btn {
     background-image: linear-gradient(to right, var(--primary-color), var(--secondary-color));
     color: white;
     border: none;
@@ -1839,4 +1841,3 @@ h2 {
         padding-left: 15px;
         text-align: left;
     }
-}

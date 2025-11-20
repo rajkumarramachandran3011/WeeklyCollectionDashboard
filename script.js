@@ -103,44 +103,56 @@ document.addEventListener('DOMContentLoaded', () => {
         const weekId = getWeekId(new Date(currentDate));
         customerGridBody.innerHTML = '';
         for (const customer of customerData) {
-            const payment = customer.paymentHistory ? customer.paymentHistory[weekId] : null;
-            const paymentStatus = payment ? payment.status : 'Pending';
-            const lastPaidAmount = payment ? payment.amount : 0;
-            const paymentMode = payment ? payment.mode : 'Cash';
+            try {
+                const payment = customer.paymentHistory ? customer.paymentHistory[weekId] : null;
+                const paymentStatus = payment ? payment.status : 'Pending';
+                const lastPaidAmount = payment ? payment.amount : 0;
+                const paymentMode = payment ? payment.mode : 'Cash';
 
-            const row = document.createElement('tr');
-            row.dataset.customerId = customer.id; // Add data-customer-id to the row
+                // Provide defaults for potentially missing data
+                const balanceAmount = customer.balanceAmount ?? 0;
+                const totalPayableAmount = customer.totalPayableAmount ?? 0;
+                const customerName = customer.name || 'N/A';
+                const customerId = customer.id || 'N/A';
+                const customerDay = customer.day || 'N/A';
+                const customerAddress = customer.address || '';
 
-            row.innerHTML = `
-                <td data-label="Name" class="customer-name-cell">
-                    <div class="customer-name">${customer.name}</div>
-                    <div class="customer-id">${customer.id}</div>
-                </td>
-                <td data-label="Day" style="display: none;">
-                    <div>${customer.day}</div>
-                    <div class="customer-address">${customer.address}</div>
-                </td>
-                <td data-label="Balance Amount" class="balance-amount-cell">
-                    <div class="balance-amount">₹${customer.balanceAmount.toLocaleString('en-IN')}</div>
-                    <div class="total-payable">of ₹${customer.totalPayableAmount.toLocaleString('en-IN')}</div>
-                </td>
-                <td data-label="Amount Paid">
-                    <div class="amount-paid-container">
-                        <input type="number" class="amount-paid-input" value="${paymentStatus === 'Paid' ? lastPaidAmount : ''}" ${paymentStatus === 'Paid' ? 'disabled' : ''} min="1" max="99999">
-                        <select class="payment-mode-select" ${paymentStatus === 'Paid' ? 'disabled' : ''}>
-                            <option value="Cash" ${paymentMode === 'Cash' ? 'selected' : ''}>Cash</option>
-                            <option value="UPI" ${paymentMode === 'UPI' ? 'selected' : ''}>UPI</option>
-                        </select>
-                    </div>
-                </td>
-                <td data-label="Actions">
-                    ${paymentStatus === 'Paid' ? '<button class="edit-pay-btn"><i class="fas fa-edit"></i> Edit</button>' : '<button class="pay-btn pay-btn-large"><i class="fas fa-money-bill-wave"></i> Pay</button>'}
-                </td>
-                <td data-label="Payment Status">
-                    ${paymentStatus === 'Paid' ? `<span class="paid-status">Paid</span><div class="paid-date">${new Date(payment.paymentDate).toLocaleString()}</div>` : '<span class="not-paid-status">Not Paid</span>'}
-                </td>
-            `;
-            customerGridBody.appendChild(row);
+                const row = document.createElement('tr');
+                row.dataset.customerId = customerId; // Add data-customer-id to the row
+
+                row.innerHTML = `
+                    <td data-label="Name" class="customer-name-cell">
+                        <div class="customer-name">${customerName}</div>
+                        <div class="customer-id">${customerId}</div>
+                    </td>
+                    <td data-label="Day" style="display: none;">
+                        <div>${customerDay}</div>
+                        <div class="customer-address">${customerAddress}</div>
+                    </td>
+                    <td data-label="Balance Amount" class="balance-amount-cell">
+                        <div class="balance-amount">₹${balanceAmount.toLocaleString('en-IN')}</div>
+                        <div class="total-payable">of ₹${totalPayableAmount.toLocaleString('en-IN')}</div>
+                    </td>
+                    <td data-label="Amount Paid">
+                        <div class="amount-paid-container">
+                            <input type="number" class="amount-paid-input" value="${paymentStatus === 'Paid' ? lastPaidAmount : ''}" ${paymentStatus === 'Paid' ? 'disabled' : ''} min="1" max="99999">
+                            <select class="payment-mode-select" ${paymentStatus === 'Paid' ? 'disabled' : ''}>
+                                <option value="Cash" ${paymentMode === 'Cash' ? 'selected' : ''}>Cash</option>
+                                <option value="UPI" ${paymentMode === 'UPI' ? 'selected' : ''}>UPI</option>
+                            </select>
+                        </div>
+                    </td>
+                    <td data-label="Actions">
+                        ${paymentStatus === 'Paid' ? '<button class="edit-pay-btn"><i class="fas fa-edit"></i> Edit</button>' : '<button class="pay-btn pay-btn-large"><i class="fas fa-money-bill-wave"></i> Pay</button>'}
+                    </td>
+                    <td data-label="Payment Status">
+                        ${paymentStatus === 'Paid' ? `<span class="paid-status">Paid</span><div class="paid-date">${new Date(payment.paymentDate).toLocaleString()}</div>` : '<span class="not-paid-status">Not Paid</span>'}
+                    </td>
+                `;
+                customerGridBody.appendChild(row);
+            } catch (error) {
+                console.error("Could not render customer row. Data might be corrupt:", customer, error);
+            }
         }
     };
 
@@ -242,6 +254,20 @@ document.addEventListener('DOMContentLoaded', () => {
                             (c.address && c.address.toLowerCase().includes(searchTerm))
                         );
                     }
+
+                    // Filter based on account opening date
+                    filteredCustomers = filteredCustomers.filter(c => {
+                        if (!c.accountOpeningDate) {
+                            return true; // If no account opening date is set, always show the customer.
+                        }
+                        const accountOpeningDate = new Date(c.accountOpeningDate);
+                        // Set hours to 0 to compare dates only
+                        accountOpeningDate.setHours(0, 0, 0, 0);
+                        const currentDateOnly = new Date(currentDate);
+                        currentDateOnly.setHours(0, 0, 0, 0);
+
+                        return currentDateOnly >= accountOpeningDate;
+                    });
 
                     renderGrid(filteredCustomers);
                 };
@@ -622,16 +648,240 @@ document.addEventListener('DOMContentLoaded', () => {
 
                                         
 
-                                            // Initial calls to load data and render UI
+                                                                                        // Initial calls to load data and render UI
 
-                                            loadCustomers();
+                                        
 
-                                            preselectCurrentDayFilter();
+                                            
 
-                                            updateWeekRange();
+                                        
 
-                                            filterAndRender();
+                                                                                        const downloadExcelBtn = document.getElementById('download-excel-btn');
 
-                                        });
+                                        
+
+                                            
+
+                                        
+
+                                                                                        downloadExcelBtn.addEventListener('click', () => {
+
+                                        
+
+                                                                                            const activeDayFilterButton = document.querySelector('.day-filter.active');
+
+                                        
+
+                                                                                            const dayFilter = activeDayFilterButton ? activeDayFilterButton.dataset.day : 'All';
+
+                                        
+
+                                                                                            const weekId = getWeekId(new Date(currentDate));
+
+                                        
+
+                                            
+
+                                        
+
+                                                                                            let dataToExport = [];
+
+                                        
+
+                                                                                            const headers = ["ID", "Name", "Balance Amount", "Amount Paid", "Payment Mode", "Payment Status"];
+
+                                        
+
+                                                                                            dataToExport.push(headers);
+
+                                        
+
+                                            
+
+                                        
+
+                                                                                            // Filter customers based on the selected day
+
+                                        
+
+                                                                                            let customersForReport = customers;
+
+                                        
+
+                                                                                            if (dayFilter !== 'All') {
+
+                                        
+
+                                                                                                customersForReport = customers.filter(c => c.day === dayFilter);
+
+                                        
+
+                                                                                            }
+
+                                        
+
+                                            
+
+                                        
+
+                                                                                            customersForReport.forEach(customer => {
+
+                                        
+
+                                                                                                const payment = customer.paymentHistory ? customer.paymentHistory[weekId] : null;
+
+                                        
+
+                                                                                                const paymentStatus = payment ? payment.status : 'Pending';
+
+                                        
+
+                                                                                                const amountPaid = payment ? payment.amount : 0;
+
+                                        
+
+                                                                                                const paymentMode = payment ? payment.mode : 'N/A';
+
+                                        
+
+                                            
+
+                                        
+
+                                                                                                dataToExport.push([
+
+                                        
+
+                                                                                                    customer.id,
+
+                                        
+
+                                                                                                    customer.name,
+
+                                        
+
+                                                                                                    `₹${customer.balanceAmount.toLocaleString('en-IN')}`,
+
+                                        
+
+                                                                                                    `₹${amountPaid.toLocaleString('en-IN')}`,
+
+                                        
+
+                                                                                                    paymentMode,
+
+                                        
+
+                                                                                                    paymentStatus
+
+                                        
+
+                                                                                                ]);
+
+                                        
+
+                                                                                            });
+
+                                        
+
+                                            
+
+                                        
+
+                                                                                            const ws = XLSX.utils.aoa_to_sheet(dataToExport);
+
+                                        
+
+                                                                                            const wb = XLSX.utils.book_new();
+
+                                        
+
+                                                                                            XLSX.utils.book_append_sheet(wb, ws, "Daily Report");
+
+                                        
+
+                                                                                            XLSX.writeFile(wb, `Daily_Report_${dayFilter}_${new Date().toLocaleDateString('en-US').replace(/\//g, '-')}.xlsx`);
+
+                                        
+
+                                                                                        });
+
+                                        
+
+                                            
+
+                                        
+
+
+                                                                                        const downloadBookBtn = document.getElementById('download-book-btn');
+                                                                                        downloadBookBtn.addEventListener('click', () => {
+                                                                                            const wb = XLSX.utils.book_new();
+                                                                                            const customersData = [];
+                                                                                        
+                                                                                            // Generate the last 15 week IDs from the current date
+                                                                                            const last15WeekIds = [];
+                                                                                            for (let i = 0; i < 15; i++) {
+                                                                                                const date = new Date(); // Use current date, not from UI
+                                                                                                date.setDate(date.getDate() - (i * 7));
+                                                                                                last15WeekIds.push(getWeekId(date));
+                                                                                            }
+                                                                                            last15WeekIds.sort((a, b) => new Date(b) - new Date(a)); // Sort to have the most recent week first
+                                                                                        
+                                                                                            const headers = ['ID', 'Name', 'Total Payable', 'Amount Paid', 'Balance Amount', ...last15WeekIds.map(weekId => {
+                                                                                                const date = new Date(weekId);
+                                                                                                const day = String(date.getDate()).padStart(2, '0');
+                                                                                                const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+                                                                                                const year = date.getFullYear();
+                                                                                                return `${day}/${month}/${year}`;
+                                                                                            })];
+                                                                                            
+                                                                                            customersData.push(headers);
+                                                                                        
+                                                                                            customers.forEach(customer => {
+                                                                                                const totalPaid = Object.values(customer.paymentHistory || {}).reduce((sum, payment) => sum + payment.amount, 0);
+                                                                                                const row = [customer.id, customer.name, customer.totalPayableAmount, totalPaid, customer.balanceAmount];
+                                                                                                last15WeekIds.forEach(weekId => {
+                                                                                                    const payment = customer.paymentHistory ? customer.paymentHistory[weekId] : null;
+                                                                                                    row.push(payment ? payment.amount : 0);
+                                                                                                });
+                                                                                                customersData.push(row);
+                                                                                            });
+                                                                                        
+                                                                                            const ws = XLSX.utils.aoa_to_sheet(customersData);
+
+                                                                                            // Freeze columns A to E
+                                                                                            ws['!freeze'] = { xSplit: 5, ySplit: 0, topLeftCell: 'F1', activePane: 'topRight', state: 'frozen' };
+
+                                                                                            // Add distinct colors to columns A to E
+                                                                                            const colors = ['FFFF00', '00FF00', '00FFFF', 'FF00FF', 'FFA500'];
+                                                                                            for (let i = 0; i < 5; i++) {
+                                                                                                const cellRef = XLSX.utils.encode_cell({c: i, r: 0});
+                                                                                                if (!ws[cellRef].s) ws[cellRef].s = {};
+                                                                                                if (!ws[cellRef].s.fill) ws[cellRef].s.fill = {};
+                                                                                                ws[cellRef].s.fill.fgColor = { rgb: colors[i] };
+                                                                                            }
+
+                                                                                            XLSX.utils.book_append_sheet(wb, ws, 'Book');
+                                                                                            XLSX.writeFile(wb, 'Book.xlsx');
+                                                                                        });
+
+                                                                                        loadCustomers();
+
+
+                                        
+
+                                                                                        preselectCurrentDayFilter();
+
+                                        
+
+                                                                                        updateWeekRange();
+
+                                        
+
+                                                                                        filterAndRender();
+
+                                        
+
+                                                                                    });
 
             
