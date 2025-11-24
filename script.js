@@ -1,4 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- START: Firebase Configuration ---
+    // 1. Replace with your actual Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDWYZzcbK8Jd_QcWCbReR-iN6d3hcJEQ_Y",
+      authDomain:  "finapp-3006.firebaseapp.com",
+      projectId: "finapp-3006",
+      storageBucket: "finapp-3006.firebasestorage.app",
+      messagingSenderId: "673293000997",
+      appId: "1:673293000997:web:425da724f496bff8573acc"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore(); // Get a reference to the Firestore database
+    // --- END: Firebase Configuration ---
+
     const addCustomerBtn = document.getElementById('add-customer-btn');
     const modal = document.getElementById('add-customer-modal');
     const closeBtn = document.querySelector('.close-btn');
@@ -47,17 +63,29 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedDateDisplay.textContent = `Selected Day: ${today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
     };
 
-    // Load customers from Local Storage
+    // Load customers from Firestore
     const loadCustomers = () => {
-        const storedCustomers = localStorage.getItem('customers');
-        if (storedCustomers) {
-            customers = JSON.parse(storedCustomers);
-        }
+        console.log("Setting up Firestore listener...");
+        db.collection("customers").onSnapshot((snapshot) => {
+            console.log("Received snapshot from Firestore. Number of documents:", snapshot.size);
+            customers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            console.log("Loaded customers:", customers);
+            customers.sort((a, b) => a.id.localeCompare(b.id)); // Keep customers sorted
+            filterAndRender(); // Re-render the grid whenever data changes
+        }, (error) => {
+            console.error("Firestore snapshot error: ", error);
+            alert("Error connecting to the database. Please check the console for details.");
+        });
     };
 
     // Preselect current day filter
     const preselectCurrentDayFilter = () => {
         const today = new Date();
+        // If we are just loading the page, we might not have customers yet.
+        // The `loadCustomers` function will call `filterAndRender` once data arrives.
+        // So, we only need to set the active button and date display here.
+        if (customers.length === 0) return;
+
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const currentDayName = days[today.getDay()];
 
@@ -76,11 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelector('.day-filter[data-day="Sunday"]').classList.add('active');
         }
         updateSelectedDate(currentDayName); // Update the selected date display for the preselected day
-    };
-
-    // Save customers to Local Storage
-    const saveCustomers = () => {
-        localStorage.setItem('customers', JSON.stringify(customers));
     };
 
     const getNextCustomerId = () => {
@@ -338,18 +361,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (editingCustomerIndex !== null) {
 
-                        const confirmation = confirm('Are you sure you want to delete this customer? This action cannot be undone.');
-
-                        if (confirmation) {
-
-                            customers.splice(editingCustomerIndex, 1);
-
-                            saveCustomers();
+                        const customerToDelete = customers[editingCustomerIndex];
+                        if (confirm('Are you sure you want to delete this customer? This action cannot be undone.')) {
+                            // Delete from Firestore
+                            db.collection("customers").doc(customerToDelete.id).delete().then(() => {
+                                console.log("Customer deleted successfully");
+                            }).catch(error => {
+                                console.error("Error removing document: ", error);
+                                alert("Error deleting customer. Check console for details.");
+                            });
 
                             editingCustomerIndex = null;
-
-                            filterAndRender();
-
                             modal.style.display = 'none';
 
                         }
@@ -400,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const newCustomer = {
 
-                        id: document.getElementById('customer-id').value,
+                        // id is now managed by Firestore, but we can keep it for display if we want.
 
                         name: name,
 
@@ -430,21 +452,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (editingCustomerIndex !== null) {
 
-                        customers[editingCustomerIndex] = newCustomer;
-
+                        const customerToUpdate = customers[editingCustomerIndex];
+                        // Update in Firestore
+                        db.collection("customers").doc(customerToUpdate.id).set(newCustomer, { merge: true }).then(() => {
+                            console.log("Customer updated successfully");
+                        }).catch(error => console.error("Error updating document: ", error));
                         editingCustomerIndex = null;
 
                     } else {
-
-                        customers.push(newCustomer);
+                        const customerId = document.getElementById('customer-id').value;
+                        // Add to Firestore with a specific ID
+                        db.collection("customers").doc(customerId).set(newCustomer).then(() => {
+                            console.log("Customer added successfully");
+                        }).catch(error => console.error("Error adding document: ", error));
 
                     }
 
             
+                    // No need to call saveCustomers() or filterAndRender() here.
+                    // The `onSnapshot` listener in `loadCustomers` will handle updates automatically.
 
-                    saveCustomers();
-
-                    filterAndRender();
 
                     modal.style.display = 'none';
 
@@ -518,29 +545,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             
 
-                            customers[customerIndex].balanceAmount -= paidAmount; // Subtract from balance
-
-                            if (!customers[customerIndex].paymentHistory) {
-
-                                customers[customerIndex].paymentHistory = {};
-
-                            }
-
-                            customers[customerIndex].paymentHistory[weekId] = {
-
+                            const customerToUpdate = customers[customerIndex];
+                            const newBalance = customerToUpdate.balanceAmount - paidAmount;
+                            const newPaymentHistory = customerToUpdate.paymentHistory || {};
+                            newPaymentHistory[weekId] = {
                                 amount: paidAmount,
-
                                 mode: paymentModeSelect.value,
-
                                 status: 'Paid',
-
                                 paymentDate: new Date()
-
                             };
 
-                            saveCustomers(); // Save updated customers to local storage
-
-                            filterAndRender();
+                            db.collection("customers").doc(customerId).update({
+                                balanceAmount: newBalance,
+                                paymentHistory: newPaymentHistory
+                            }).catch(error => console.error("Error updating document: ", error));
 
                         }
 
@@ -560,15 +578,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         if (customerIndex !== -1) {
 
-                            const payment = customers[customerIndex].paymentHistory[weekId];
+                            const customerToUpdate = customers[customerIndex];
+                            const payment = customerToUpdate.paymentHistory[weekId];
+                            if (payment) {
+                                const newBalance = customerToUpdate.balanceAmount + payment.amount;
+                                const newPaymentHistory = customerToUpdate.paymentHistory;
+                                delete newPaymentHistory[weekId];
 
-                            customers[customerIndex].balanceAmount += payment.amount;
-
-                            delete customers[customerIndex].paymentHistory[weekId];
-
-                            saveCustomers(); // Save updated customers to local storage
-
-                            filterAndRender();
+                                db.collection("customers").doc(customerId).update({
+                                    balanceAmount: newBalance,
+                                    paymentHistory: newPaymentHistory
+                                }).catch(error => console.error("Error updating document: ", error));
+                            }
 
                                             }
 
@@ -866,19 +887,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                                                                         });
 
                                                                                         loadCustomers();
-
-
-                                        
-
                                                                                         preselectCurrentDayFilter();
-
-                                        
-
                                                                                         updateWeekRange();
-
                                         
-
-                                                                                        filterAndRender();
+                                                                                        // filterAndRender() is now called by loadCustomers()
+                                                                                        // after the initial data is loaded from Firestore.
 
                                         
 
