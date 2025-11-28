@@ -113,6 +113,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return firstDay.toISOString().split('T')[0];
     }
 
+    const formatDate = (date) => {
+        if (!date) return 'N/A';
+        // Handle Firestore Timestamps
+        if (date.toDate) {
+            return date.toDate().toLocaleString();
+        }
+        // Handle native Date objects or date strings
+        const d = new Date(date);
+        return isNaN(d) ? 'Invalid Date' : d.toLocaleString();
+    };
+
     const renderGrid = (customerData) => {
         const weekId = getWeekId(new Date(currentDate));
         customerGridBody.innerHTML = '';
@@ -130,14 +141,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 const customerId = customer.id || 'N/A';
                 const customerDay = customer.day || 'N/A';
                 const customerAddress = customer.address || '';
+                const customerPhone = customer.phone || '';
 
                 const row = document.createElement('tr');
                 row.dataset.customerId = customerId; // Add data-customer-id to the row
 
                 row.innerHTML = `
                     <td data-label="Name" class="customer-name-cell">
-                        <div class="customer-name">${customerName}</div>
-                        <div class="customer-id">${customerId}</div>
+                        <div class="customer-name-container">
+                            <div>
+                                <div class="customer-name">${customerName}</div>
+                                <div class="customer-id">${customerId}</div>
+                            </div>
+                            <div class="payment-status-dots">
+                                ${[...Array(10).keys()].map(i => {
+                                    const date = new Date(currentDate);
+                                    date.setDate(date.getDate() - (i * 7));
+                                    const weekId = getWeekId(date);
+                                    const accountOpeningDate = new Date(customer.accountOpeningDate);
+                                    if (date < accountOpeningDate) {
+                                        return '';
+                                    }
+                                    const payment = customer.paymentHistory ? customer.paymentHistory[weekId] : null;
+                                    return `<span class="status-dot ${payment ? 'paid' : 'not-paid'}"></span>`;
+                                }).join('')}
+                            </div>
+                            <a href="tel:${customerPhone}" class="call-btn"><i class="fas fa-phone"></i></a>
+                        </div>
                     </td>
                     <td data-label="Day" style="display: none;">
                         <div>${customerDay}</div>
@@ -160,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${paymentStatus === 'Paid' ? '<button class="edit-pay-btn"><i class="fas fa-edit"></i> Edit</button>' : '<button class="pay-btn pay-btn-large"><i class="fas fa-money-bill-wave"></i> Pay</button>'}
                     </td>
                     <td data-label="Payment Status">
-                        ${paymentStatus === 'Paid' ? `<span class="paid-status">Paid</span><div class="paid-date">${new Date(payment.paymentDate).toLocaleString()}</div>` : '<span class="not-paid-status">Not Paid</span>'}
+                        ${paymentStatus === 'Paid' ? `<span class="paid-status">Paid</span><div class="paid-date">${formatDate(payment.paymentDate)}</div>` : '<span class="not-paid-status">Not Paid</span>'}
                     </td>
                 `;
                 customerGridBody.appendChild(row);
@@ -178,8 +208,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('customer-id').value = customer.id;
         document.getElementById('name').value = customer.name;
         document.getElementById('phone').value = customer.phone;
+        document.getElementById('alternate-phone-number').value = customer.alternatePhoneNumber || '';
         document.getElementById('address').value = customer.address;
         document.getElementById('day').value = customer.day;
+        document.getElementById('loan-amount').value = customer.loanAmount || '';
         document.getElementById('total-payable-amount').value = customer.totalPayableAmount;
         // Assuming numberOfInstallments is part of customer object
         document.getElementById('number-of-installments').value = customer.numberOfInstallments || '';
@@ -412,31 +444,18 @@ document.addEventListener('DOMContentLoaded', () => {
             
 
                     const newCustomer = {
-
-                        // id is now managed by Firestore, but we can keep it for display if we want.
-
                         name: name,
-
                         phone: phone,
-
+                        alternatePhoneNumber: document.getElementById('alternate-phone-number').value,
                         address: document.getElementById('address').value,
-
                         day: document.getElementById('day').value,
-
-            
-
+                        loanAmount: parseInt(document.getElementById('loan-amount').value),
                         totalPayableAmount: parseInt(document.getElementById('total-payable-amount').value),
-
-                        balanceAmount: parseInt(document.getElementById('total-payable-amount').value), // Initially set balance to total payable
-
-                        amountPaid: 0, // Reset amount paid for new customer
-
+                        balanceAmount: parseInt(document.getElementById('total-payable-amount').value),
+                        amountPaid: 0,
                         lastPaidAmount: 0,
-
                         accountOpeningDate: document.getElementById('account-opening-date').value,
-
                         paymentHistory: {}
-
                     };
 
             
@@ -591,6 +610,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         
 
                                         // Handle click on Name cell to show customer details
+
+                                        if (e.target.closest('.call-btn')) {
+                                            return;
+                                        }
 
                                         if (e.target.closest('.customer-name-cell')) {
 

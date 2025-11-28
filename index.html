@@ -54,7 +54,6 @@
                             <th style="display: none;">Day</th>
                             <th>Balance Amount</th>
                             <th>Amount Paid</th>
-
                             <th>Actions</th>
                             <th>Payment Status</th>
                         </tr>
@@ -75,6 +74,7 @@
                 <input type="text" id="customer-id" placeholder="Customer ID" readonly>
                 <input type="text" id="name" placeholder="Name" required>
                 <input type="tel" id="phone" placeholder="Phone Number" required>
+                <input type="tel" id="alternate-phone-number" placeholder="Alternate Phone Number">
                 <input type="text" id="address" placeholder="Address" required>
                 <select id="day" required>
                     <option value="">Select Day</option>
@@ -87,6 +87,7 @@
                     <option value="Saturday">Saturday</option>
                 </select>
 
+                <input type="number" id="loan-amount" placeholder="Loan Amount" required>
                 <input type="number" id="total-payable-amount" placeholder="Total Payable Amount" required>
                 <input type="number" id="number-of-installments" placeholder="Number of Installments" required>
                 <input type="date" id="account-opening-date" required>
