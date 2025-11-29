@@ -26,8 +26,74 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyBalanceAmount = document.getElementById('history-balance-amount');
     const historyGridBody = transactionHistoryModal.querySelector('#transaction-history-table-body');
 
+    // New DOM elements for Daily Report Modal
+    const dailyReportModal = document.getElementById('daily-report-modal');
+    const dailyReportCloseBtn = document.querySelector('.daily-report-close-btn');
+    const generateReportBtn = document.getElementById('generate-report-btn'); // Reference to the generate report button
+    const totalCollectionDisplay = document.getElementById('total-collection-display');
+    const totalLoanAmountDisplay = document.getElementById('total-loan-amount-display');
+    const totalOnlineCollectionDisplay = document.getElementById('total-online-collection-display');
+
     let currentDate = new Date();
     let customers = [];
+
+    // Function to calculate and display the daily report
+    const showDailyReportModal = () => {
+        const activeDayFilter = document.querySelector('.day-filter.active')?.dataset.day || 'All';
+        let totalCollection = 0;
+        let totalLoanAmount = 0;
+        let totalOnlineCollection = 0;
+
+        const selectedDate = new Date(currentDate);
+        selectedDate.setHours(0, 0, 0, 0); // Normalize for consistent comparison
+
+        // --- Calculate Loan Amount (from all customers) ---
+        customers.forEach(customer => {
+            if (customer.accountOpeningDate && customer.loanAmount) {
+                const [year, month, day] = customer.accountOpeningDate.split('-').map(Number);
+                const accountOpeningDate = new Date(year, month - 1, day);
+                accountOpeningDate.setHours(0, 0, 0, 0);
+
+                if (accountOpeningDate.getTime() === selectedDate.getTime()) {
+                    totalLoanAmount += customer.loanAmount;
+                }
+            }
+        });
+
+        // --- Calculate Collection (from grid) ---
+        const gridRows = customerGridBody.querySelectorAll('tr');
+        gridRows.forEach(row => {
+            const paymentStatusCell = row.querySelector('td[data-label="Payment Status"] .paid-status');
+            if (paymentStatusCell) { // Check if the customer has a 'Paid' status
+                const amountPaidInput = row.querySelector('.amount-paid-input');
+                const paymentModeSelect = row.querySelector('.payment-mode-select');
+                
+                if (amountPaidInput && paymentModeSelect) {
+                    const amount = parseFloat(amountPaidInput.value);
+                    if (!isNaN(amount)) {
+                        totalCollection += amount;
+                        if (paymentModeSelect.value === 'UPI') {
+                            totalOnlineCollection += amount;
+                        }
+                    }
+                }
+            }
+        });
+
+        totalCollectionDisplay.textContent = `₹${totalCollection.toLocaleString('en-IN')}`;
+        totalLoanAmountDisplay.textContent = `₹${totalLoanAmount.toLocaleString('en-IN')}`;
+        totalOnlineCollectionDisplay.textContent = `₹${totalOnlineCollection.toLocaleString('en-IN')}`;
+
+        dailyReportModal.style.display = 'block';
+    };
+
+    // Event listener for Generate Report button
+    generateReportBtn.addEventListener('click', showDailyReportModal);
+
+    // Event listener for closing the daily report modal
+    dailyReportCloseBtn.addEventListener('click', () => {
+        dailyReportModal.style.display = 'none';
+    });
 
     // Function to update the displayed week range
     const updateWeekRange = () => {
@@ -51,6 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const diff = targetDayIndex - currentDayIndex;
             today.setDate(today.getDate() + diff);
         }
+        currentDate = today; // This is the fix: update the global currentDate
         selectedDateDisplay.textContent = `Selected Day: ${today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
     };
 
@@ -75,7 +142,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // If we are just loading the page, we might not have customers yet.
         // The `loadCustomers` function will call `filterAndRender` once data arrives.
         // So, we only need to set the active button and date display here.
-        if (customers.length === 0) return;
 
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const currentDayName = days[today.getDay()];
@@ -115,13 +181,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const formatDate = (date) => {
         if (!date) return 'N/A';
-        // Handle Firestore Timestamps
-        if (date.toDate) {
-            return date.toDate().toLocaleString();
+        // Handle Firestore Timestamps, strings, or native Date objects
+        const d = date.toDate ? date.toDate() : new Date(date);
+
+        if (isNaN(d)) {
+            return 'Invalid Date';
         }
-        // Handle native Date objects or date strings
-        const d = new Date(date);
-        return isNaN(d) ? 'Invalid Date' : d.toLocaleString();
+
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
+        const year = d.getFullYear();
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        const seconds = String(d.getSeconds()).padStart(2, '0');
+
+        return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
     };
 
     const renderGrid = (customerData) => {
@@ -200,8 +274,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Function to show/edit customer details in the add-customer-modal
     const showCustomerDetailsModal = (customer) => {
+        // Remove the existing customer dropdown if it exists when opening for edit
+        const existingDropdownContainer = document.getElementById('existing-customer-dropdown-container');
+        if (existingDropdownContainer) {
+            existingDropdownContainer.remove();
+        }
         document.querySelector('#add-customer-modal h2').textContent = 'Edit Customer';
         document.querySelector('#add-customer-form button[type="submit"]').textContent = 'Update Customer';
 
@@ -214,8 +292,14 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('loan-amount').value = customer.loanAmount || '';
         document.getElementById('total-payable-amount').value = customer.totalPayableAmount;
         // Assuming numberOfInstallments is part of customer object
-        document.getElementById('number-of-installments').value = customer.numberOfInstallments || '';
+        document.getElementById('number-of-installments').value = customer.numberOfInstallments || 12;
         document.getElementById('account-opening-date').value = customer.accountOpeningDate;
+        document.getElementById('loan-amount').addEventListener('input', (e) => {
+            const loanAmount = parseInt(e.target.value);
+            if (!isNaN(loanAmount)) {
+                document.getElementById('total-payable-amount').value = loanAmount * 1.2;
+            }
+        });
 
         editingCustomerIndex = customers.findIndex(c => c.id === customer.id);
         deleteCustomerBtn.style.display = 'block'; // Show delete button when editing
@@ -282,9 +366,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             
 
-                const filterAndRender = () => {
-                    const activeDayFilterButton = document.querySelector('.day-filter.active');
-                    const dayFilter = activeDayFilterButton ? activeDayFilterButton.dataset.day : 'All';
+                const filterAndRender = (day) => {
+                    const dayFilter = day || (document.querySelector('.day-filter.active') ? document.querySelector('.day-filter.active').dataset.day : 'All');
                     const searchTerm = searchInput.value.toLowerCase();
 
                     let filteredCustomers = customers;
@@ -306,13 +389,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (!c.accountOpeningDate) {
                             return true; // If no account opening date is set, always show the customer.
                         }
-                        const accountOpeningDate = new Date(c.accountOpeningDate);
-                        // Set hours to 0 to compare dates only
-                        accountOpeningDate.setHours(0, 0, 0, 0);
-                        const currentDateOnly = new Date(currentDate);
-                        currentDateOnly.setHours(0, 0, 0, 0);
 
-                        return currentDateOnly >= accountOpeningDate;
+                        const localDate = new Date(currentDate);
+                        const year = localDate.getFullYear();
+                        const month = String(localDate.getMonth() + 1).padStart(2, '0');
+                        const day = String(localDate.getDate()).padStart(2, '0');
+                        const currentDateStr = `${year}-${month}-${day}`;
+
+                        // Show customers if the current date is greater than or equal to their account opening date.
+                        return currentDateStr >= c.accountOpeningDate;
                     });
 
                     renderGrid(filteredCustomers);
@@ -328,55 +413,124 @@ document.addEventListener('DOMContentLoaded', () => {
 
             
 
-                                addCustomerBtn.addEventListener('click', () => {
-
-            
-
+                addCustomerBtn.addEventListener('click', () => {
                     editingCustomerIndex = null;
-
-            
-
                     document.querySelector('#add-customer-modal h2').textContent = 'Add New Customer';
-
-            
-
-                    document.querySelector('#add-customer-form button[type="submit"]').textContent = 'Add Customer'; // Ensure button text is "Add Customer"
-
-            
-
+                    document.querySelector('#add-customer-form button[type="submit"]').textContent = 'Add Customer';
                     addCustomerForm.reset();
+                
+                    // --- START: Existing Customer Dropdown ---
+                    const customerIdField = document.getElementById('customer-id');
+                    const form = customerIdField.form;
+                
+                    // Remove previous dropdown if it exists
+                    const existingDropdownContainer = document.getElementById('existing-customer-dropdown-container');
+                    if (existingDropdownContainer) {
+                        existingDropdownContainer.remove();
+                    }
+                
+                    // Create and configure the dropdown
+                    const dropdownContainer = document.createElement('div');
+                    dropdownContainer.id = 'existing-customer-dropdown-container';
+                    const label = document.createElement('label');
+                    label.htmlFor = 'existing-customer-select';
+                    label.textContent = 'Copy from Existing Customer';
 
-            
-
+                    const select = document.createElement('select');
+                    select.id = 'existing-customer-select';
+                    select.innerHTML = '<option value="">--Select to Autofill--</option>';
+                
+                    // Populate dropdown with customers from the selected day
+                    const selectedDay = document.querySelector('.day-filter.active')?.dataset.day || 'Sunday';
+                    const existingCustomers = customers.filter(c => c.day === selectedDay);
+                
+                    existingCustomers.forEach(customer => {
+                        const option = document.createElement('option');
+                        option.value = customer.id;
+                        option.textContent = `${customer.name} (${customer.id})`;
+                        select.appendChild(option);
+                    });
+                
+                    // Add change event listener for autofill
+                    select.addEventListener('change', (e) => {
+                        const customerId = e.target.value;
+                        if (customerId) {
+                            const selectedCustomer = customers.find(c => c.id === customerId);
+                            if (selectedCustomer) {
+                                // Keep the NEW customer ID, but fill other details
+                                document.getElementById('name').value = selectedCustomer.name;
+                                document.getElementById('phone').value = selectedCustomer.phone;
+                                document.getElementById('alternate-phone-number').value = selectedCustomer.alternatePhoneNumber || '';
+                                document.getElementById('address').value = selectedCustomer.address;
+                                document.getElementById('loan-amount').value = selectedCustomer.loanAmount || '';
+                                document.getElementById('total-payable-amount').value = selectedCustomer.totalPayableAmount;
+                                document.getElementById('number-of-installments').value = selectedCustomer.numberOfInstallments || 12;
+                                // The 'day' and 'account-opening-date' are kept as per the new entry defaults
+                            }
+                        } else {
+                            // Clear the form if the "Select" option is chosen again
+                            addCustomerForm.reset();
+                            document.getElementById('customer-id').value = getNextCustomerId();
+                            document.getElementById('day').value = selectedDay === 'All' ? 'Sunday' : selectedDay;
+                            const today = new Date();
+                            const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                            document.getElementById('account-opening-date').value = formattedDate;
+                        }
+                    });
+                
+                    dropdownContainer.appendChild(label);
+                    dropdownContainer.appendChild(select);
+                
+                    // Insert the dropdown into the form before the Customer ID input's parent element
+                    customerIdField.parentElement.insertAdjacentElement('beforebegin', dropdownContainer);
+                    // --- END: Existing Customer Dropdown ---
+                
                     document.getElementById('customer-id').value = getNextCustomerId();
-
-            
-
-                    const selectedDay = document.querySelector('.day-filter.active').dataset.day;
-
-            
-
-                    document.getElementById('day').value = selectedDay;
-
-            
-
-                    deleteCustomerBtn.style.display = 'none'; // Hide delete button when adding new customer
-
-            
-
+                    document.getElementById('day').value = selectedDay === 'All' ? 'Sunday' : selectedDay;
+                    document.getElementById('number-of-installments').value = 12;
+                    const today = new Date();
+                    const year = today.getFullYear();
+                    const month = String(today.getMonth() + 1).padStart(2, '0');
+                    const day = String(today.getDate()).padStart(2, '0');
+                    const formattedDate = `${year}-${month}-${day}`;
+                    document.getElementById('account-opening-date').value = formattedDate;
+                    document.getElementById('loan-amount').addEventListener('input', (e) => {
+                        const loanAmount = parseInt(e.target.value, 10);
+                        if (!isNaN(loanAmount)) {
+                            document.getElementById('total-payable-amount').value = loanAmount * 1.2;
+                        }
+                    });
+                    deleteCustomerBtn.style.display = 'none';
                     modal.style.display = 'block';
-
-            
-
                 });
 
             
 
-                closeBtn.addEventListener('click', () => {
+                                closeBtn.addEventListener('click', () => {
 
-                    modal.style.display = 'none';
+            
 
-                });
+                                    const existingDropdownContainer = document.getElementById('existing-customer-dropdown-container');
+
+            
+
+                                    if (existingDropdownContainer) {
+
+            
+
+                                        existingDropdownContainer.remove();
+
+            
+
+                                    }
+
+            
+
+                                    modal.style.display = 'none';
+
+            
+
+                                });
 
             
 
@@ -418,30 +572,36 @@ document.addEventListener('DOMContentLoaded', () => {
             
 
                 addCustomerForm.addEventListener('submit', (e) => {
-
                     e.preventDefault();
 
-                    const name = document.getElementById('name').value;
+                    // --- START: Day of Week Validation ---
+                    const accountOpeningDateStr = document.getElementById('account-opening-date').value;
+                    const selectedDay = document.getElementById('day').value;
 
+                    // The date comes in as 'YYYY-MM-DD'. To avoid timezone issues where getDay() might be off,
+                    // we parse it by explicitly setting UTC time components.
+                    const dateParts = accountOpeningDateStr.split('-').map(part => parseInt(part, 10));
+                    const accountOpeningDate = new Date(Date.UTC(dateParts[0], dateParts[1] - 1, dateParts[2]));
+
+                    const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                    const actualDay = daysOfWeek[accountOpeningDate.getUTCDay()];
+
+                    if (actualDay !== selectedDay) {
+                        alert(`Date and day mismatch. The selected date, ${accountOpeningDateStr}, is a ${actualDay}, but you selected ${selectedDay}. Please correct one of them.`);
+                        return; // Stop the submission
+                    }
+                    // --- END: Day of Week Validation ---
+
+                    const name = document.getElementById('name').value;
                     const phone = document.getElementById('phone').value;
 
-            
-
                     if (editingCustomerIndex === null) { // Only check for duplicates when adding a new customer
-
                         const isDuplicate = customers.some(customer => customer.name === name && customer.phone === phone);
-
                         if (isDuplicate) {
-
                             alert('A customer with the same name and phone number already exists.');
-
                             return;
-
                         }
-
                     }
-
-            
 
                     const newCustomer = {
                         name: name,
@@ -458,39 +618,28 @@ document.addEventListener('DOMContentLoaded', () => {
                         paymentHistory: {}
                     };
 
-            
-
                     if (editingCustomerIndex !== null) {
-
                         const customerToUpdate = customers[editingCustomerIndex];
                         // Update in Firestore
                         db.collection("customers").doc(customerToUpdate.id).set(newCustomer, { merge: true }).then(() => {
                             console.log("Customer updated successfully");
                         }).catch(error => console.error("Error updating document: ", error));
                         editingCustomerIndex = null;
-
                     } else {
                         const customerId = document.getElementById('customer-id').value;
                         // Add to Firestore with a specific ID
                         db.collection("customers").doc(customerId).set(newCustomer).then(() => {
                             console.log("Customer added successfully");
                         }).catch(error => console.error("Error adding document: ", error));
-
                     }
 
-            
                     // No need to call saveCustomers() or filterAndRender() here.
                     // The `onSnapshot` listener in `loadCustomers` will handle updates automatically.
 
-
                     modal.style.display = 'none';
-
                     addCustomerForm.reset();
-
                     document.querySelector('#add-customer-modal h2').textContent = 'Add New Customer';
-
                     document.querySelector('#add-customer-form button').textContent = 'Add Customer';
-
                 });
 
             
@@ -505,7 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         updateSelectedDate(e.target.dataset.day);
 
-                        filterAndRender();
+                        filterAndRender(e.target.dataset.day);
 
                     }
 
@@ -513,7 +662,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             
 
-                searchInput.addEventListener('input', filterAndRender);
+                searchInput.addEventListener('input', () => filterAndRender());
 
             
 
@@ -665,21 +814,63 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         
 
-                                    window.addEventListener('click', (e) => {
+                                                    window.addEventListener('click', (e) => {
 
-                                        if (e.target === modal) {
+                        
 
-                                            modal.style.display = 'none';
+                                                        if (e.target === modal) {
 
-                                        }
+                        
 
-                                                                                if (e.target === transactionHistoryModal) {
+                                                            const existingDropdownContainer = document.getElementById('existing-customer-dropdown-container');
 
-                                                                                    transactionHistoryModal.style.display = 'none';
+                        
 
-                                                                                }
+                                                            if (existingDropdownContainer) {
 
-                                                                            });
+                        
+
+                                                                existingDropdownContainer.remove();
+
+                        
+
+                                                            }
+
+                        
+
+                                                            modal.style.display = 'none';
+
+                        
+
+                                                        }
+
+                        
+
+                                                                                                            if (e.target === transactionHistoryModal) {
+
+                        
+
+                                                                                                                                            transactionHistoryModal.style.display = 'none';
+
+                        
+
+                                                                                                                                        }
+
+                        
+
+                                                                                                                                        if (e.target === dailyReportModal) {
+
+                        
+
+                                                                                                                                            dailyReportModal.style.display = 'none';
+
+                        
+
+                                                                                                                                        }
+
+                        
+
+                                                                                                                                    });
 
                                         
 
@@ -723,7 +914,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                                         
 
-                                                                                            const headers = ["ID", "Name", "Balance Amount", "Amount Paid", "Payment Mode", "Payment Status"];
+                                                                                            const headers = ["ID", "Name", "Balance Amount", "Amount Paid", "Payment Mode", "Payment Status", "Payment Date"];
 
                                         
 
@@ -776,6 +967,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                         
 
                                                                                                 const paymentMode = payment ? payment.mode : 'N/A';
+                                                                                                const paymentDate = payment ? formatDate(payment.paymentDate) : 'N/A';
 
                                         
 
@@ -807,7 +999,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                                         
 
-                                                                                                    paymentStatus
+                                                                                                    paymentStatus,
+                                                                                                    paymentDate
 
                                         
 
@@ -848,9 +1041,59 @@ document.addEventListener('DOMContentLoaded', () => {
                                         
 
 
-                                                                                        const downloadBookBtn = document.getElementById('download-book-btn');
-                                                                                        downloadBookBtn.addEventListener('click', () => {
-                                                                                            const wb = XLSX.utils.book_new();
+                                                                                            const downloadBookBtn = document.getElementById('download-book-btn');
+                                                                                            const whatsappShareBtn = document.getElementById('whatsapp-share-btn'); // Get the new button
+                                                                                        
+                                                                                            whatsappShareBtn.addEventListener('click', async () => {
+                                                                                                const transactionHistoryModalContent = transactionHistoryModal.querySelector('.modal-content');
+                                                                                                if (!transactionHistoryModalContent) {
+                                                                                                    console.error("Transaction history modal content not found.");
+                                                                                                    return;
+                                                                                                }
+                                                                                        
+                                                                                                try {
+                                                                                                    const canvas = await html2canvas(transactionHistoryModalContent, {
+                                                                                                        scale: 2, // Increase scale for better quality
+                                                                                                        useCORS: true, // If any images are loaded from external sources
+                                                                                                        windowWidth: transactionHistoryModalContent.scrollWidth,
+                                                                                                        windowHeight: transactionHistoryModalContent.scrollHeight
+                                                                                                    });
+                                                                                                    const imageDataUrl = canvas.toDataURL('image/png');
+                                                                                                    const blob = await (await fetch(imageDataUrl)).blob();
+                                                                                                    const file = new File([blob], 'transaction_history.png', { type: 'image/png' });
+                                                                                        
+                                                                                                    if (navigator.share) {
+                                                                                                        try {
+                                                                                                            await navigator.share({
+                                                                                                                files: [file],
+                                                                                                                title: `Transaction History for ${historyCustomerName.textContent}`,
+                                                                                                                text: `Here's the transaction history for ${historyCustomerName.textContent}.`,
+                                                                                                            });
+                                                                                                            console.log('Transaction history shared successfully!');
+                                                                                                        } catch (error) {
+                                                                                                            console.error('Error sharing transaction history:', error);
+                                                                                                            // Fallback to direct WhatsApp link if Web Share API fails or user cancels
+                                                                                                            const message = encodeURIComponent(`Here's the transaction history for ${historyCustomerName.textContent}. Please see the attached image.`);
+                                                                                                            window.open(`whatsapp://send?text=${message}`, '_blank');
+                                                                                                            alert('Unable to share image directly via WhatsApp. Please save the image and share manually, or the WhatsApp app might open with a text message.');
+                                                                                                        }
+                                                                                                    } else {
+                                                                                                        // Fallback for browsers that do not support Web Share API
+                                                                                                        const link = document.createElement('a');
+                                                                                                        link.href = imageDataUrl;
+                                                                                                        link.download = `transaction_history_${historyCustomerName.textContent.replace(/ /g, '_')}.png`;
+                                                                                                        document.body.appendChild(link);
+                                                                                                        link.click();
+                                                                                                        document.body.removeChild(link);
+                                                                                                        alert('Your browser does not support direct sharing. The image has been downloaded. Please share it manually via WhatsApp.');
+                                                                                                    }
+                                                                                                } catch (error) {
+                                                                                                    console.error('Error generating transaction history image:', error);
+                                                                                                    alert('Could not generate image for sharing. Please try again.');
+                                                                                                }
+                                                                                            });
+                                                                                        
+                                                                                            downloadBookBtn.addEventListener('click', () => {                                                                                            const wb = XLSX.utils.book_new();
                                                                                             const customersData = [];
                                                                                         
                                                                                             // Generate the last 15 week IDs from the current date
@@ -862,7 +1105,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                                                                             }
                                                                                             last15WeekIds.sort((a, b) => new Date(b) - new Date(a)); // Sort to have the most recent week first
                                                                                         
-                                                                                            const headers = ['ID', 'Name', 'Total Payable', 'Amount Paid', 'Balance Amount', ...last15WeekIds.map(weekId => {
+                                                                                            const headers = ['ID', 'Name', 'Loan Amount', 'Total Payable', 'Total Amount Paid', 'Balance Amount', ...last15WeekIds.map(weekId => {
                                                                                                 const date = new Date(weekId);
                                                                                                 const day = String(date.getDate()).padStart(2, '0');
                                                                                                 const month = String(date.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
@@ -874,7 +1117,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                                                                         
                                                                                             customers.forEach(customer => {
                                                                                                 const totalPaid = Object.values(customer.paymentHistory || {}).reduce((sum, payment) => sum + payment.amount, 0);
-                                                                                                const row = [customer.id, customer.name, customer.totalPayableAmount, totalPaid, customer.balanceAmount];
+                                                                                                const row = [customer.id, customer.name, customer.loanAmount || 0, customer.totalPayableAmount, totalPaid, customer.balanceAmount];
                                                                                                 last15WeekIds.forEach(weekId => {
                                                                                                     const payment = customer.paymentHistory ? customer.paymentHistory[weekId] : null;
                                                                                                     row.push(payment ? payment.amount : 0);
@@ -884,12 +1127,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                                                                         
                                                                                             const ws = XLSX.utils.aoa_to_sheet(customersData);
 
-                                                                                            // Freeze columns A to E
-                                                                                            ws['!freeze'] = { xSplit: 5, ySplit: 0, topLeftCell: 'F1', activePane: 'topRight', state: 'frozen' };
+                                                                                            // Freeze columns A to F now
+                                                                                            ws['!freeze'] = { xSplit: 6, ySplit: 0, topLeftCell: 'G1', activePane: 'topRight', state: 'frozen' };
 
-                                                                                            // Add distinct colors to columns A to E
-                                                                                            const colors = ['FFFF00', '00FF00', '00FFFF', 'FF00FF', 'FFA500'];
-                                                                                            for (let i = 0; i < 5; i++) {
+                                                                                            // Add distinct colors to columns A to F
+                                                                                            const colors = ['FFFF00', '00FF00', 'FFC0CB', '00FFFF', 'FF00FF', 'FFA500']; // Added one more color
+                                                                                            for (let i = 0; i < 6; i++) {
                                                                                                 const cellRef = XLSX.utils.encode_cell({c: i, r: 0});
                                                                                                 if (!ws[cellRef].s) ws[cellRef].s = {};
                                                                                                 if (!ws[cellRef].s.fill) ws[cellRef].s.fill = {};
